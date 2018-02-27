@@ -12,6 +12,7 @@ from tkinter import messagebox
 import os
 import string
 import numpy as np
+import scipy.io as sio
 import matplotlib as mpl
 mpl.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
@@ -82,7 +83,7 @@ class Window(Frame):
         
         self.converttdtBtn.grid(column=0, row=0)
         self.loadfileBtn.grid(column=0, row=1)
-        self.filenameLbl.grid(column=0, row=2, sticky=W)
+        self.filenameLbl.grid(column=0, row=2, columnspan=2, sticky=W)
         
         self.baselineLbl.grid(column=0, row=3, sticky=E)
         self.baselineField.grid(column=1, row=3)
@@ -95,10 +96,41 @@ class Window(Frame):
         
         self.aboutLbl.grid(column=0, row=5, columnspan=3, sticky=W)
         
+        self.sessionviewer()
+        
     def converttdt(self):
         alert('Feature coming soon!')
     def loadfile(self):
-        alert('Feature coming soon!')
+        #self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
+        self.filename = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\thph2.3thph2.4distraction.mat'
+        self.shortfilename.set(ntpath.basename(self.filename))
+        self.openmatfile()
+    
+    def openmatfile(self):
+        a = sio.loadmat(self.filename, squeeze_me=True, struct_as_record=False) 
+        self.output = a['output']
+        self.fs = self.output.fs1
+        self.data = self.output.result1
+        self.dataUV = self.output.resultUV1
+        self.sessionviewer()
+        
+    def sessionviewer(self):        
+        f = Figure(figsize=(9,3))
+        ax = f.add_subplot(111)
+        try:
+            ax.plot(self.data, color='blue')
+            ax.plot(self.dataUV, color='m')
+        
+            ax.set_xticks(np.multiply([0, 10, 20, 30, 40, 50, 60],60*self.fs))
+            ax.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
+            ax.set_xlabel('Time (min)')        
+        except:
+            pass
+        
+        canvas = FigureCanvasTkAgg(f, self.f2)
+        canvas.show()
+        canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
+   
     def makesnips(self):
         alert('Feature coming soon!')
         
@@ -110,6 +142,7 @@ def alert(msg):
 root = Tk()
 
 currdir = os.getcwd()
+currdir = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\'
 
 app = Window(root)
 root.lift()
