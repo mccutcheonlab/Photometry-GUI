@@ -101,20 +101,13 @@ class Window(Frame):
         
         self.sessionviewer()
         
-        #                # Set up Dropdown buttons
-#        self.OPTIONS = ['None']
-#        self.onset = StringVar(self.master)
-#        self.onsetButton = ttk.OptionMenu(self, self.onset, *self.OPTIONS)    
-#        self.offset = StringVar(self.master)
-#        self.offsetButton = ttk.OptionMenu(self, self.offset, *self.OPTIONS)
-        sigOPTIONS = ['None']
-        self.blue = StringVar(self.master)
-        self.chooseblueMenu = ttk.OptionMenu(self, self.blue, *sigOPTIONS)
-        
-        self.chooseblueMenu.grid(column=1, row=1)
+        self.blue = StringVar(self.master)       
+        self.uv = StringVar(self.master)        
+        self.updatesigoptions()
         
     def converttdt(self):
         alert('Feature coming soon!')
+        
     def loadfile(self):
         #self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
         self.filename = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\thph2.3thph2.4distraction.mat'
@@ -143,27 +136,42 @@ class Window(Frame):
                 self.streamfields.append(x)
             except:
                 pass
+            
     def getepochfields(self):
         self.epochfields = []
         for x in self.output._fieldnames:
             var = getattr(self.output, x)
             if hasattr(var, 'onset'):
                 self.epochfields.append(x)
-        print(self.epochfields)
+        print(self.epochfields) 
         
     def updatesigoptions(self):
-        sigOPTIONS = self.streamfields
-        print(self.streamfields)
-        print(sigOPTIONS)
-        self.chooseblueMenu = ttk.OptionMenu(self, self.blue, *sigOPTIONS)
+        try:
+            sigOptions = self.streamfields
+        except:
+            sigOptions = ['None']
+            
+        self.chooseblueMenu = ttk.OptionMenu(self, self.blue, *sigOptions, command=self.setsignals())
+        self.chooseuvMenu = ttk.OptionMenu(self, self.uv, *sigOptions, command=self.setsignals())
+        
+        self.chooseblueMenu.grid(column=1, row=1)
+        self.chooseuvMenu.grid(column=1, row=2)
+
+    def setsignals(self):
+        alert('This needs to set actual signals to data')
         
     def sessionviewer(self):        
         f = Figure(figsize=(9,3))
         ax = f.add_subplot(111)
         try:
             ax.plot(self.data, color='blue')
+        except:
+            pass
+        try:
             ax.plot(self.dataUV, color='m')
-        
+        except:
+            pass
+        try:
             ax.set_xticks(np.multiply([0, 10, 20, 30, 40, 50, 60],60*self.fs))
             ax.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
             ax.set_xlabel('Time (min)')        
