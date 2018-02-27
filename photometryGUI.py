@@ -33,8 +33,6 @@ class Window(Frame):
         f2.configure('inner.TFrame', background='light cyan')
         
         ttk.Frame.__init__(self, master, style='TFrame', padding=(10, 10, 15, 15))               
-
-
         
         self.master = master        
         self.init_window()
@@ -43,15 +41,18 @@ class Window(Frame):
         self.master.title('Photometry Analyzer')
         self.pack(fill=BOTH, expand=1)
         
-        #Frame for session window
-#        self.f2 = ttk.Frame(self, style='inner.TFrame',# borderwidth=5,
-#                            relief="sunken", width=300, height=500)
-#        
-#        self.f2.grid(self, column=0, row=2, columnspan=6, rowspan=3, sticky=(N,S,E,W))
+        #Frames for session window and snipits
+        self.f2 = ttk.Frame(self, style='inner.TFrame', relief='sunken',
+                            borderwidth=5, height=150)
+        self.f3 = ttk.Frame(self, style='inner.TFrame', relief='sunken',
+                            borderwidth=5, height=200, width=400)
+        self.f4 = ttk.Frame(self, style='inner.TFrame', relief='sunken',
+                            borderwidth=5, height=200, width=400)
 
         self.converttdtBtn = ttk.Button(self, text='Convert TDT File', command=self.converttdt)
         self.loadfileBtn = ttk.Button(self, text='Load File', command=self.loadfile)
-    
+        self.makesnipsBtn = ttk.Button(self, text='Make Snips', command=self.makesnips)
+        
         self.shortfilename = StringVar(self.master)
         self.shortfilename.set('No file loaded')
         self.filenameLbl = ttk.Label(self, textvariable=self.shortfilename)
@@ -73,9 +74,12 @@ class Window(Frame):
         self.nbinsField.insert(END, '300')
        
         self.aboutLbl = ttk.Label(self, text='Photometry Analyzer-1.0 by J McCutcheon')
-
-    
-    
+# Packing grid with widgets
+        
+        self.f2.grid(column=2, row=0, columnspan=6, rowspan=3, sticky=(N,S,E,W))
+        self.f3.grid(column=0, row=4, columnspan=4, sticky=(N,S,E,W))
+        self.f4.grid(column=4, row=4, columnspan=4, sticky=(N,S,E,W))
+        
         self.converttdtBtn.grid(column=0, row=0)
         self.loadfileBtn.grid(column=0, row=1)
         self.filenameLbl.grid(column=0, row=2, sticky=W)
@@ -87,11 +91,15 @@ class Window(Frame):
         self.nbinsLbl.grid(column=4, row=3, sticky=E)
         self.nbinsField.grid(column=5, row=3)
         
+        self.makesnipsBtn.grid(column=6, row=3, columnspan=2, sticky=(W,E))
+        
         self.aboutLbl.grid(column=0, row=5, columnspan=3, sticky=W)
         
     def converttdt(self):
         alert('Feature coming soon!')
     def loadfile(self):
+        alert('Feature coming soon!')
+    def makesnips(self):
         alert('Feature coming soon!')
         
         
