@@ -58,6 +58,9 @@ class Window(Frame):
         self.shortfilename.set('No file loaded')
         self.filenameLbl = ttk.Label(self, textvariable=self.shortfilename)
         
+        
+
+        
         self.baselineLbl = ttk.Label(self, text='Baseline (s)')
         self.snipitLbl = ttk.Label(self, text='Snipit length (s)')
         self.nbinsLbl = ttk.Label(self, text='No. of bins')
@@ -98,6 +101,18 @@ class Window(Frame):
         
         self.sessionviewer()
         
+        #                # Set up Dropdown buttons
+#        self.OPTIONS = ['None']
+#        self.onset = StringVar(self.master)
+#        self.onsetButton = ttk.OptionMenu(self, self.onset, *self.OPTIONS)    
+#        self.offset = StringVar(self.master)
+#        self.offsetButton = ttk.OptionMenu(self, self.offset, *self.OPTIONS)
+        sigOPTIONS = ['None']
+        self.blue = StringVar(self.master)
+        self.chooseblueMenu = ttk.OptionMenu(self, self.blue, *sigOPTIONS)
+        
+        self.chooseblueMenu.grid(column=1, row=1)
+        
     def converttdt(self):
         alert('Feature coming soon!')
     def loadfile(self):
@@ -113,6 +128,34 @@ class Window(Frame):
         self.data = self.output.result1
         self.dataUV = self.output.resultUV1
         self.sessionviewer()
+        self.getstreamfields()
+        self.getepochfields()
+        self.updatesigoptions()
+        
+    def makesnips(self):
+        alert('Feature coming soon!')
+        
+    def getstreamfields(self):
+        self.streamfields = []
+        for x in self.output._fieldnames:
+            try:
+                len(getattr(self.output, x))
+                self.streamfields.append(x)
+            except:
+                pass
+    def getepochfields(self):
+        self.epochfields = []
+        for x in self.output._fieldnames:
+            var = getattr(self.output, x)
+            if hasattr(var, 'onset'):
+                self.epochfields.append(x)
+        print(self.epochfields)
+        
+    def updatesigoptions(self):
+        sigOPTIONS = self.streamfields
+        print(self.streamfields)
+        print(sigOPTIONS)
+        self.chooseblueMenu = ttk.OptionMenu(self, self.blue, *sigOPTIONS)
         
     def sessionviewer(self):        
         f = Figure(figsize=(9,3))
@@ -131,9 +174,7 @@ class Window(Frame):
         canvas.show()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
    
-    def makesnips(self):
-        alert('Feature coming soon!')
-        
+                      
         
 def alert(msg):
     print(msg)
