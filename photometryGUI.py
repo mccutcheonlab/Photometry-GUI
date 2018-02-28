@@ -24,6 +24,7 @@ import csv
 import collections
 
 import JM_general_functions as jmf
+import JM_custom_figs as jmfig
 
 # Main class for GUI
 class Window(Frame):
@@ -128,12 +129,16 @@ class Window(Frame):
         self.getstreamfields()
         self.getepochfields()
         self.updatesigoptions()
-
        
     def makesnips(self):
         self.setevents()
+        self.bins = int(self.nbins.get())
+        self.time2samples()
+        self.randomevents = makerandomevents(120, max(self.output.Tick.onset)-120)
+        self.bgTrials, self.pps = jmf.snipper(self.data, self.randomevents,
+                                        t2sMap = self.t2sMap, fs = self.fs, bins=self.bins)
         self.snips = jmf.mastersnipper(self, self.events)
-        alert('Feature coming soon!')
+        self.averagesnipsviewer()
         
     def getstreamfields(self):
         self.streamfields = []
@@ -184,9 +189,7 @@ class Window(Frame):
     def setevents(self):
         try:
             self.event = getattr(self.output, self.eventsVar.get())
-            print(type(self.event))
             self.events = getattr(self.event, self.onsetVar.get())
-            print(len(self.events))
         except: pass
         
     def sessionviewer(self):
@@ -210,10 +213,49 @@ class Window(Frame):
         canvas = FigureCanvasTkAgg(f, self.f2)
         canvas.show()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
+        
+    def averagesnipsviewer(self):
+        f = Figure(figsize=(5,3))
+        ax = f.add_subplot(111)
+        
+#        jmf.trialsMultShadedFig(ax, self.snips['blue'])
+        jmfig.trialsMultShadedFig(ax, [self.snips['uv'], self.snips['blue']],
+                          self.pps,
+                          eventText = self.eventsVar.get())
+        
+        canvas = FigureCanvasTkAgg(f, self.f4)
+        canvas.show()
+        canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
+
+    def time2samples(self):
+        tick = self.output.Tick.onset
+        maxsamples = len(tick)*int(self.fs)
+        if (len(self.data) - maxsamples) > 2*int(self.fs):
+            print('Something may be wrong with conversion from time to samples')
+            print(str(len(self.data) - maxsamples) + ' samples left over. This is more than double fs.')
+            self.t2sMap = np.linspace(min(tick), max(tick), maxsamples)
+        else:
+            self.t2sMap = np.linspace(min(tick), max(tick), maxsamples)
+            
+    def event2sample(self, EOI):
+        idx = (np.abs(self.t2sMap - EOI)).argmin()   
+        return idx
        
 def alert(msg):
     print(msg)
     messagebox.showinfo('Error', msg)
+    
+def makerandomevents(minTime, maxTime, spacing = 77, n=100):
+    events = []
+    total = maxTime-minTime
+    start = 0
+    for i in np.arange(0,n):
+        if start > total:
+            start = start - total
+        events.append(start)
+        start = start + spacing
+    events = [i+minTime for i in events]
+    return events
 
 root = Tk()
 
