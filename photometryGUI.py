@@ -53,13 +53,11 @@ class Window(Frame):
         self.converttdtBtn = ttk.Button(self, text='Convert TDT File', command=self.converttdt)
         self.loadfileBtn = ttk.Button(self, text='Load File', command=self.loadfile)
         self.makesnipsBtn = ttk.Button(self, text='Make Snips', command=self.makesnips)
+        self.viewsessionBtn = ttk.Button(self, text='View Session', command=self.sessionviewer)
         
         self.shortfilename = StringVar(self.master)
         self.shortfilename.set('No file loaded')
         self.filenameLbl = ttk.Label(self, textvariable=self.shortfilename)
-        
-        
-
         
         self.baselineLbl = ttk.Label(self, text='Baseline (s)')
         self.snipitLbl = ttk.Label(self, text='Snipit length (s)')
@@ -87,6 +85,8 @@ class Window(Frame):
         self.converttdtBtn.grid(column=0, row=0)
         self.loadfileBtn.grid(column=0, row=1)
         self.filenameLbl.grid(column=0, row=2, columnspan=2, sticky=W)
+        
+        self.viewsessionBtn.grid(column=1, row=0)
         
         self.baselineLbl.grid(column=0, row=3, sticky=E)
         self.baselineField.grid(column=1, row=3)
@@ -118,9 +118,6 @@ class Window(Frame):
         a = sio.loadmat(self.filename, squeeze_me=True, struct_as_record=False) 
         self.output = a['output']
         self.fs = self.output.fs1
-        self.data = self.output.result1
-        self.dataUV = self.output.resultUV1
-        self.sessionviewer()
         self.getstreamfields()
         self.getepochfields()
         self.updatesigoptions()
@@ -143,47 +140,45 @@ class Window(Frame):
             var = getattr(self.output, x)
             if hasattr(var, 'onset'):
                 self.epochfields.append(x)
-        print(self.epochfields) 
         
     def updatesigoptions(self):
         try:
             sigOptions = self.streamfields
-        except:
+        except AttributeError:
             sigOptions = ['None']
             
-        self.chooseblueMenu = ttk.OptionMenu(self, self.blue, *sigOptions, command=self.setsignals())
-        self.chooseuvMenu = ttk.OptionMenu(self, self.uv, *sigOptions, command=self.setsignals())
+        self.chooseblueMenu = ttk.OptionMenu(self, self.blue, *sigOptions)
+        self.chooseuvMenu = ttk.OptionMenu(self, self.uv, *sigOptions)
         
         self.chooseblueMenu.grid(column=1, row=1)
         self.chooseuvMenu.grid(column=1, row=2)
 
-    def setsignals(self):
-        alert('This needs to set actual signals to data')
+    def setsignals(self):       
+        try:
+            self.data = getattr(self.output, self.blue.get())
+            self.dataUV = getattr(self.output, self.uv.get())
+        except AttributeError: pass
         
-    def sessionviewer(self):        
+    def sessionviewer(self):
+        self.setsignals()
         f = Figure(figsize=(9,3))
         ax = f.add_subplot(111)
         try:
             ax.plot(self.data, color='blue')
-        except:
-            pass
+        except AttributeError: pass
         try:
             ax.plot(self.dataUV, color='m')
-        except:
-            pass
+        except AttributeError: pass
         try:
             ax.set_xticks(np.multiply([0, 10, 20, 30, 40, 50, 60],60*self.fs))
             ax.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
             ax.set_xlabel('Time (min)')        
-        except:
-            pass
+        except: pass
         
         canvas = FigureCanvasTkAgg(f, self.f2)
         canvas.show()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
-   
-                      
-        
+       
 def alert(msg):
     print(msg)
     messagebox.showinfo('Error', msg)
