@@ -117,8 +117,8 @@ class Window(Frame):
         alert('Feature coming soon!')
         
     def loadfile(self):
-        #self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
-        self.filename = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\thph2.3thph2.4distraction.mat'
+        self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
+#        self.filename = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\thph2.3thph2.4distraction.mat'
         self.shortfilename.set(ntpath.basename(self.filename))
         self.openmatfile()
     
