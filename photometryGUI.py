@@ -23,6 +23,8 @@ import ntpath#
 import csv
 import collections
 
+import JM_general_functions as jmf
+
 # Main class for GUI
 class Window(Frame):
     
@@ -30,6 +32,7 @@ class Window(Frame):
         f1 = ttk.Style()
         f1.configure('.', background='powder blue', padding=5)
         f1.configure('TButton', width=15, sticky=(E,W))
+        f1.configure('TEntry', width=10)
         f2 = ttk.Style()
         f2.configure('inner.TFrame', background='light cyan')
         
@@ -62,6 +65,7 @@ class Window(Frame):
         self.baselineLbl = ttk.Label(self, text='Baseline (s)')
         self.snipitLbl = ttk.Label(self, text='Snipit length (s)')
         self.nbinsLbl = ttk.Label(self, text='No. of bins')
+#        self.chooseeventLbl = ttk.Label(self, text='Choose event')
         
         self.baseline = StringVar(self.master)
         self.baselineField = ttk.Entry(self, textvariable=self.baseline)
@@ -95,15 +99,18 @@ class Window(Frame):
         self.nbinsLbl.grid(column=4, row=3, sticky=E)
         self.nbinsField.grid(column=5, row=3)
         
-        self.makesnipsBtn.grid(column=6, row=3, columnspan=2, sticky=(W,E))
+        self.makesnipsBtn.grid(column=8, row=3, columnspan=2, sticky=(W,E))
         
         self.aboutLbl.grid(column=0, row=5, columnspan=3, sticky=W)
+     
+        self.blue = StringVar(self.master)       
+        self.uv = StringVar(self.master)  
+        self.eventsVar = StringVar(self.master)
+        self.onsetVar = StringVar(self.master)
+        self.updatesigoptions()
+        self.updateeventoptions()
         
         self.sessionviewer()
-        
-        self.blue = StringVar(self.master)       
-        self.uv = StringVar(self.master)        
-        self.updatesigoptions()
         
     def converttdt(self):
         alert('Feature coming soon!')
@@ -121,8 +128,11 @@ class Window(Frame):
         self.getstreamfields()
         self.getepochfields()
         self.updatesigoptions()
-        
+
+       
     def makesnips(self):
+        self.setevents()
+        self.snips = jmf.mastersnipper(self, self.events)
         alert('Feature coming soon!')
         
     def getstreamfields(self):
@@ -131,8 +141,7 @@ class Window(Frame):
             try:
                 len(getattr(self.output, x))
                 self.streamfields.append(x)
-            except:
-                pass
+            except: pass
             
     def getepochfields(self):
         self.epochfields = []
@@ -158,9 +167,32 @@ class Window(Frame):
             self.data = getattr(self.output, self.blue.get())
             self.dataUV = getattr(self.output, self.uv.get())
         except AttributeError: pass
+    
+    def updateeventoptions(self):
+        try:
+            eventOptions = self.epochfields
+        except AttributeError:
+            eventOptions = ['None']
+        
+        self.chooseeventMenu = ttk.OptionMenu(self, self.eventsVar, *eventOptions)
+        self.chooseeventMenu.grid(column=6, row=3)
+        
+        onsetOptions = ['onset', 'offset']
+        self.onsetMenu = ttk.OptionMenu(self, self.onsetVar, *onsetOptions)
+        self.onsetMenu.grid(column=7, row=3)
+    
+    def setevents(self):
+        try:
+            self.event = getattr(self.output, self.eventsVar.get())
+            print(type(self.event))
+            self.events = getattr(self.event, self.onsetVar.get())
+            print(len(self.events))
+        except: pass
         
     def sessionviewer(self):
+        self.updateeventoptions()
         self.setsignals()
+
         f = Figure(figsize=(9,3))
         ax = f.add_subplot(111)
         try:
