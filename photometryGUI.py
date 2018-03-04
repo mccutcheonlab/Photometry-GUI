@@ -117,8 +117,8 @@ class Window(Frame):
         alert('Feature coming soon!')
         
     def loadfile(self):
-        self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
-#        self.filename = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\thph2.3thph2.4distraction.mat'
+#        self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
+        self.filename = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\thph2.3thph2.4distraction.mat'
         self.shortfilename.set(ntpath.basename(self.filename))
         self.openmatfile()
     
@@ -138,7 +138,19 @@ class Window(Frame):
         self.bgTrials, self.pps = jmf.snipper(self.data, self.randomevents,
                                         t2sMap = self.t2sMap, fs = self.fs, bins=self.bins)
         self.snips = jmf.mastersnipper(self, self.events)
+        self.getnoiseindex()
+        self.singletrialviewer()
         self.averagesnipsviewer()
+    
+    def getnoiseindex(self):
+        self.noisemethod = 'sum'
+        self.threshold = 8
+        bgMAD = jmf.findnoise(self.data, self.randomevents,
+                              t2sMap = self.t2sMap, fs = self.fs, bins=self.bins,
+                              method=self.noisemethod)          
+        sigSum = [np.sum(abs(i)) for i in self.snips['blue']]
+        sigSD = [np.std(i) for i in self.snips['blue']]
+        self.noiseindex = [i > bgMAD*self.threshold for i in sigSum]
         
     def getstreamfields(self):
         self.streamfields = []
@@ -214,11 +226,35 @@ class Window(Frame):
         canvas.show()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
         
+    def singletrialviewer(self):
+        f = Figure(figsize=(5,3))
+        ax = f.add_subplot(111)
+        
+        jmfig.trialsFig(ax, self.snips['blue'], noiseindex=self.noiseindex)
+        
+        alltrialVar = StringVar(self.f3)
+        ttk.Radiobutton(self.f3, text='All Trials', variable=alltrialVar, value='all').grid(
+                row=0, column=0)
+        ttk.Radiobutton(self.f3, text='Single Trial', variable=alltrialVar, value='single').grid(
+                row=0, column=1)
+        
+        
+        
+        currenttrialVar = IntVar(self.f3)
+        currenttrialVar.set(0)
+        self.trialEntry = ttk.Entry(self.f3, textvariable=currenttrialVar).grid(
+                row=0, column=2)
+
+#                
+#        
+#        canvas = FigureCanvasTkAgg(f, self.f3)
+#        canvas.show()
+#        canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
+        
     def averagesnipsviewer(self):
         f = Figure(figsize=(5,3))
         ax = f.add_subplot(111)
         
-#        jmf.trialsMultShadedFig(ax, self.snips['blue'])
         jmfig.trialsMultShadedFig(ax, [self.snips['uv'], self.snips['blue']],
                           self.pps,
                           eventText = self.eventsVar.get())
