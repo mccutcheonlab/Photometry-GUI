@@ -5,6 +5,8 @@ Photometry GUI to extract TDT files and view events and data
 @author: jaimeHP
 """
 # Import statements
+import sys
+sys.path.append('C:\\Users\\jaimeHP\\Documents\\GitHub\\functions-and-figures\\')
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
@@ -79,11 +81,13 @@ class Window(Frame):
         self.nbins = StringVar(self.master)
         self.nbinsField = ttk.Entry(self, textvariable=self.nbins)
         self.nbinsField.insert(END, '300')
+
+        self.snipsprogress = ttk.Progressbar(self, orient=VERTICAL, length=200, mode='determinate')
        
         self.aboutLbl = ttk.Label(self, text='Photometry Analyzer-1.0 by J McCutcheon')
 # Packing grid with widgets
         
-        self.f2.grid(column=2, row=0, columnspan=6, rowspan=3, sticky=(N,S,E,W))
+        self.f2.grid(column=2, row=0, columnspan=8, rowspan=3, sticky=(N,S,E,W))
         self.f3.grid(column=0, row=4, columnspan=4, sticky=(N,S,E,W))
         self.f4.grid(column=4, row=4, columnspan=4, sticky=(N,S,E,W))
         
@@ -101,7 +105,8 @@ class Window(Frame):
         self.nbinsField.grid(column=5, row=3)
         
         self.makesnipsBtn.grid(column=8, row=3, columnspan=2, sticky=(W,E))
-        
+        self.snipsprogress.grid(column=8, row=4, columnspan=2)
+
         self.aboutLbl.grid(column=0, row=5, columnspan=3, sticky=W)
      
         self.blue = StringVar(self.master)       
@@ -131,6 +136,7 @@ class Window(Frame):
         self.updatesigoptions()
        
     def makesnips(self):
+        self.snipsprogress.start()
         self.setevents()
         self.bins = int(self.nbins.get())
         self.time2samples()
@@ -141,6 +147,7 @@ class Window(Frame):
         self.getnoiseindex()
         self.singletrialviewer()
         self.averagesnipsviewer()
+        self.snipsprogress.stop()
     
     def getnoiseindex(self):
         self.noisemethod = 'sum'
@@ -208,7 +215,7 @@ class Window(Frame):
         self.updateeventoptions()
         self.setsignals()
 
-        f = Figure(figsize=(9,3))
+        f = Figure(figsize=(7,2))
         ax = f.add_subplot(111)
         try:
             ax.plot(self.data, color='blue')
@@ -227,7 +234,7 @@ class Window(Frame):
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
         
     def singletrialviewer(self):
-        f = Figure(figsize=(5,3))
+        f = Figure(figsize=(3,2)) # 5,3
         ax = f.add_subplot(111)
         
         jmfig.trialsFig(ax, self.snips['blue'], noiseindex=self.noiseindex)
@@ -252,7 +259,7 @@ class Window(Frame):
 #        canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
         
     def averagesnipsviewer(self):
-        f = Figure(figsize=(5,3))
+        f = Figure(figsize=(5,2)) # 5.3
         ax = f.add_subplot(111)
         
         jmfig.trialsMultShadedFig(ax, [self.snips['uv'], self.snips['blue']],
