@@ -59,6 +59,7 @@ class Window(Frame):
         self.converttdtBtn = ttk.Button(self, text='Convert TDT File', command=self.converttdt)
         self.loadfileBtn = ttk.Button(self, text='Load File', command=self.loadfile)
         self.makesnipsBtn = ttk.Button(self, text='Make Snips', command=self.makesnips)
+        self.makelickrunsBtn = ttk.Button(self, text='Lick runs', command=self.makelickruns)
         self.viewsessionBtn = ttk.Button(self, text='View Session', command=self.sessionviewer)
         
         self.shortfilename = StringVar(self.master)
@@ -82,8 +83,8 @@ class Window(Frame):
         self.nbinsField = ttk.Entry(self, textvariable=self.nbins)
         self.nbinsField.insert(END, '300')
 
-        self.snipsprogress = ttk.Progressbar(self, orient=VERTICAL, length=200, mode='determinate')
-       
+        # self.snipsprogress = ttk.Progressbar(self, orient=VERTICAL, length=200, mode='determinate')
+
         self.aboutLbl = ttk.Label(self, text='Photometry Analyzer-1.0 by J McCutcheon')
 # Packing grid with widgets
         
@@ -104,8 +105,8 @@ class Window(Frame):
         self.nbinsLbl.grid(column=4, row=3, sticky=E)
         self.nbinsField.grid(column=5, row=3)
         
-        self.makesnipsBtn.grid(column=8, row=3, columnspan=2, sticky=(W,E))
-        self.snipsprogress.grid(column=8, row=4, columnspan=2)
+        self.makesnipsBtn.grid(column=9, row=3, sticky=(W,E))
+        self.makelickrunsBtn.grid(column=8, row=4, columnspan=2)
 
         self.aboutLbl.grid(column=0, row=5, columnspan=3, sticky=W)
      
@@ -113,6 +114,7 @@ class Window(Frame):
         self.uv = StringVar(self.master)  
         self.eventsVar = StringVar(self.master)
         self.onsetVar = StringVar(self.master)
+        self.licksVar = StringVar(self.master)
         self.updatesigoptions()
         self.updateeventoptions()
         
@@ -136,7 +138,6 @@ class Window(Frame):
         self.updatesigoptions()
        
     def makesnips(self):
-        self.snipsprogress.start()
         self.setevents()
         self.bins = int(self.nbins.get())
         self.time2samples()
@@ -147,7 +148,6 @@ class Window(Frame):
         self.getnoiseindex()
         self.singletrialviewer()
         self.averagesnipsviewer()
-        self.snipsprogress.stop()
     
     def getnoiseindex(self):
         self.noisemethod = 'sum'
@@ -158,7 +158,14 @@ class Window(Frame):
         sigSum = [np.sum(abs(i)) for i in self.snips['blue']]
         sigSD = [np.std(i) for i in self.snips['blue']]
         self.noiseindex = [i > bgMAD*self.threshold for i in sigSum]
-        
+
+    def makelickruns(self):
+        self.setevents()
+        # need to set lick runs as if a normal output variable
+        self.output.runs.onset = [val for i, val in enumerate(self.licks) if (val - self.data[i-1] > 10)]
+        self.epochfields.append('runs')
+        self.updateeventoptions()
+
     def getstreamfields(self):
         self.streamfields = []
         for x in self.output._fieldnames:
@@ -195,8 +202,10 @@ class Window(Frame):
     def updateeventoptions(self):
         try:
             eventOptions = self.epochfields
+            lickOptions = self.epochfields
         except AttributeError:
             eventOptions = ['None']
+            lickOptions = ['None']
         
         self.chooseeventMenu = ttk.OptionMenu(self, self.eventsVar, *eventOptions)
         self.chooseeventMenu.grid(column=6, row=3)
@@ -204,12 +213,20 @@ class Window(Frame):
         onsetOptions = ['onset', 'offset']
         self.onsetMenu = ttk.OptionMenu(self, self.onsetVar, *onsetOptions)
         self.onsetMenu.grid(column=7, row=3)
-    
+
+        self.chooselicksMenu = ttk.OptionMenu(self, self.licksVar, *lickOptions)
+        self.chooselicksMenu.grid(column=8, row=3)
+
     def setevents(self):
+        
+        
         try:
             self.event = getattr(self.output, self.eventsVar.get())
             self.events = getattr(self.event, self.onsetVar.get())
-        except: pass
+            self.lick = getattr(self.output, self.licksVar.get())
+            self.licks = getattr(self.lick, self.onsetVar.get())
+        except:
+            alert('Cannot set event')
         
     def sessionviewer(self):
         self.updateeventoptions()
