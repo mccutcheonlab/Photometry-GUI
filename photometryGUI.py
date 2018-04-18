@@ -7,6 +7,7 @@ Photometry GUI to extract TDT files and view events and data
 # Import statements
 import sys
 sys.path.append('C:\\Users\\jaimeHP\\Documents\\GitHub\\functions-and-figures\\')
+sys.path.append('C:\\Users\\James Rig\\Documents\\GitHub\\functions-and-figures\\')
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
@@ -124,15 +125,18 @@ class Window(Frame):
         alert('Feature coming soon!')
         
     def loadfile(self):
-#        self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
-        self.filename = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\thph2.3thph2.4distraction.mat'
+        self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
+        #self.filename = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\thph2.3thph2.4distraction.mat'
         self.shortfilename.set(ntpath.basename(self.filename))
         self.openmatfile()
     
     def openmatfile(self):
         a = sio.loadmat(self.filename, squeeze_me=True, struct_as_record=False) 
         self.output = a['output']
-        self.fs = self.output.fs1
+        try:
+            self.fs = self.output.fs
+        except:
+            self.fs = self.output.fs1     # add line to search for fs variable in output
         self.getstreamfields()
         self.getepochfields()
         self.updatesigoptions()
@@ -141,7 +145,7 @@ class Window(Frame):
         self.setevents()
         self.bins = int(self.nbins.get())
         self.time2samples()
-        self.randomevents = makerandomevents(120, max(self.output.Tick.onset)-120)
+        self.randomevents = makerandomevents(120, max(self.tick)-120)
         self.bgTrials, self.pps = jmf.snipper(self.data, self.randomevents,
                                         t2sMap = self.t2sMap, fs = self.fs, bins=self.bins)
         self.snips = jmf.mastersnipper(self, self.events)
@@ -162,7 +166,7 @@ class Window(Frame):
     def makelickruns(self):
         self.setevents()
         # need to set lick runs as if a normal output variable
-        self.output.runs.onset = [val for i, val in enumerate(self.licks) if (val - self.data[i-1] > 10)]
+        self.runs = [val for i, val in enumerate(self.licks) if (val - self.data[i-1] > 10)]
         self.epochfields.append('runs')
         self.updateeventoptions()
 
@@ -180,7 +184,11 @@ class Window(Frame):
             var = getattr(self.output, x)
             if hasattr(var, 'onset'):
                 self.epochfields.append(x)
-        
+        try:
+            self.tick = self.output.tick.onset
+        except:
+            self.tick = self.output.Tick.onset
+
     def updatesigoptions(self):
         try:
             sigOptions = self.streamfields
@@ -218,11 +226,13 @@ class Window(Frame):
         self.chooselicksMenu.grid(column=8, row=3)
 
     def setevents(self):
-        
-        
         try:
-            self.event = getattr(self.output, self.eventsVar.get())
-            self.events = getattr(self.event, self.onsetVar.get())
+            if self.eventsVar.get() == 'runs':
+                self.events = self.runs
+            else:
+                self.event = getattr(self.output, self.eventsVar.get())
+                self.events = getattr(self.event, self.onsetVar.get())
+
             self.lick = getattr(self.output, self.licksVar.get())
             self.licks = getattr(self.lick, self.onsetVar.get())
         except:
@@ -288,14 +298,13 @@ class Window(Frame):
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
 
     def time2samples(self):
-        tick = self.output.Tick.onset
-        maxsamples = len(tick)*int(self.fs)
+        maxsamples = len(self.tick)*int(self.fs)
         if (len(self.data) - maxsamples) > 2*int(self.fs):
             print('Something may be wrong with conversion from time to samples')
             print(str(len(self.data) - maxsamples) + ' samples left over. This is more than double fs.')
-            self.t2sMap = np.linspace(min(tick), max(tick), maxsamples)
+            self.t2sMap = np.linspace(min(self.tick), max(self.tick), maxsamples)
         else:
-            self.t2sMap = np.linspace(min(tick), max(tick), maxsamples)
+            self.t2sMap = np.linspace(min(self.tick), max(self.tick), maxsamples)
             
     def event2sample(self, EOI):
         idx = (np.abs(self.t2sMap - EOI)).argmin()   
