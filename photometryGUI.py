@@ -83,7 +83,7 @@ class Window(Frame):
         self.nbinsField = ttk.Entry(self, textvariable=self.nbins)
         self.nbinsField.insert(END, '300')
 
-        # self.snipsprogress = ttk.Progressbar(self, orient=VERTICAL, length=200, mode='determinate')
+        self.progress = ttk.Progressbar(self, orient=HORIZONTAL, length=200, mode='determinate')
 
         self.aboutLbl = ttk.Label(self, text='Photometry Analyzer-1.0 by J McCutcheon')
 # Packing grid with widgets
@@ -109,6 +109,7 @@ class Window(Frame):
         self.makelickrunsBtn.grid(column=8, row=4, columnspan=2)
 
         self.aboutLbl.grid(column=0, row=5, columnspan=3, sticky=W)
+        self.progress.grid(column=0, row=6)
      
         self.blue = StringVar(self.master)       
         self.uv = StringVar(self.master)  
@@ -124,8 +125,8 @@ class Window(Frame):
         alert('Feature coming soon!')
         
     def loadfile(self):
-        self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
-        #self.filename = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\thph2.3thph2.4distraction.mat'
+        #self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
+        self.filename = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\thph2.3thph2.4distraction.mat'
         self.shortfilename.set(ntpath.basename(self.filename))
         self.openmatfile()
     
@@ -285,6 +286,7 @@ class Window(Frame):
 #        canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
         
     def averagesnipsviewer(self):
+        self.progress.start()
         f = Figure(figsize=(5,2)) # 5.3
         ax = f.add_subplot(111)
         
@@ -295,6 +297,7 @@ class Window(Frame):
         canvas = FigureCanvasTkAgg(f, self.f4)
         canvas.show()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
+        self.progress.stop()
 
     def time2samples(self):
         maxsamples = len(self.tick)*int(self.fs)
