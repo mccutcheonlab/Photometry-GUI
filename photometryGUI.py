@@ -126,7 +126,7 @@ class Window(Frame):
         
     def loadfile(self):
         self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
-#        self.filename = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\thph2.3thph2.4distraction.mat'
+#        self.filename = 'R:\\DA_and_Reward\\es334\\MCP1\\matfiles\\MCP1-2_s4.mat'
         self.shortfilename.set(ntpath.basename(self.filename))
         self.openmatfile()
     
@@ -166,7 +166,7 @@ class Window(Frame):
     def makelickruns(self):
         self.setevents()
         # need to set lick runs as if a normal output variable
-        self.runs = [val for i, val in enumerate(self.licks) if (val - self.data[i-1] > 10)]
+        self.runs = [val for i, val in enumerate(self.licks) if (val - self.licks[i-1] > 10)]
         self.epochfields.append('runs')
         self.updateeventoptions()
 
@@ -279,22 +279,18 @@ class Window(Frame):
         
         alltrialVar = StringVar(self.f3)
         ttk.Radiobutton(self.f3, text='All Trials', variable=alltrialVar, value='all').grid(
-                row=0, column=0)
-        ttk.Radiobutton(self.f3, text='Single Trial', variable=alltrialVar, value='single').grid(
                 row=0, column=1)
-        
-        
-        
+        ttk.Radiobutton(self.f3, text='Single Trial', variable=alltrialVar, value='single').grid(
+                row=1, column=1)
+
         currenttrialVar = IntVar(self.f3)
         currenttrialVar.set(0)
         self.trialEntry = ttk.Entry(self.f3, textvariable=currenttrialVar).grid(
-                row=0, column=2)
-
-#                
-#        
-#        canvas = FigureCanvasTkAgg(f, self.f3)
-#        canvas.show()
-#        canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
+                row=1, column=2)
+     
+        canvas = FigureCanvasTkAgg(f, self.f3)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
         
     def averagesnipsviewer(self):
         self.progress.start()
