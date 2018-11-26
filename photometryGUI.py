@@ -260,9 +260,15 @@ class Window(Frame):
             ax.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
             ax.set_xlabel('Time (min)')        
         except: pass
+        try:
+            combined = np.concatenate((self.data, self.dataUV), axis=0)
+            upper = jmf.findpercentilevalue(combined, 0.95)
+            lower = jmf.findpercentilevalue(combined, 0.05)
+            ax.set_ylim([lower, upper])
+        except: print('Getting y-axis limits for session viewer is not working')
         
         canvas = FigureCanvasTkAgg(f, self.f2)
-        canvas.show()
+        canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
         
     def singletrialviewer(self):
