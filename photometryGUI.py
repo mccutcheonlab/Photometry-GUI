@@ -85,7 +85,7 @@ class Window(Frame):
 
         self.progress = ttk.Progressbar(self, orient=HORIZONTAL, length=200, mode='determinate')
 
-        self.aboutLbl = ttk.Label(self, text='Photometry Analyzer-1.0 by J McCutcheon')
+        self.aboutLbl = ttk.Label(self, text='Photometry Analyzer-1.1 by J McCutcheon')
 # Packing grid with widgets
         
         self.f2.grid(column=2, row=0, columnspan=8, rowspan=3, sticky=(N,S,E,W))
@@ -247,25 +247,35 @@ class Window(Frame):
         self.updateeventoptions()
         self.setsignals()
 
-        f = Figure(figsize=(7,2))
-        ax = f.add_subplot(111)
+#        f = Figure(figsize=(7,2))
+        f, ax = plt.subplots(figsize=(7,2), nrows=2, sharex=True)
+#        ax = f.add_subplot(111)
         try:
-            ax.plot(self.data, color='blue')
+            ax[1].plot(self.data, color='blue')
         except AttributeError: pass
         try:
-            ax.plot(self.dataUV, color='m')
+            ax[1].plot(self.dataUV, color='m')
         except AttributeError: pass
         try:
-            ax.set_xticks(np.multiply([0, 10, 20, 30, 40, 50, 60],60*self.fs))
-            ax.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
-            ax.set_xlabel('Time (min)')        
+            ax[1].set_xticks(np.multiply([0, 10, 20, 30, 40, 50, 60],60*self.fs))
+            ax[1].set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
+            ax[1].set_xlabel('Time (min)')        
         except: pass
         try:
             combined = np.concatenate((self.data, self.dataUV), axis=0)
             upper = jmf.findpercentilevalue(combined, 0.95)
             lower = jmf.findpercentilevalue(combined, 0.05)
-            ax.set_ylim([lower, upper])
+            ax[1].set_ylim([lower, upper])
         except: print('Getting y-axis limits for session viewer is not working')
+        
+        try:
+            for i, x in enumerate(self.epochfields):
+                print(i, x)
+#                onset = getattr(output, x).onset * self.fs
+#                ax[0].scatter(onset, [i]*len(onset))
+        except:
+            print('could not plot events')
+            pass
         
         canvas = FigureCanvasTkAgg(f, self.f2)
         canvas.draw()
