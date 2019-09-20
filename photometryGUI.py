@@ -6,8 +6,7 @@ Photometry GUI to extract TDT files and view events and data
 """
 # Import statements
 import sys
-sys.path.append('C:\\Users\\jaimeHP\\Documents\\GitHub\\functions-and-figures\\')
-sys.path.append('C:\\Users\\James Rig\\Documents\\GitHub\\functions-and-figures\\')
+#sys.path.append('C:\\Github\\functions-and-figures\\')
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
@@ -15,18 +14,20 @@ from tkinter import messagebox
 import os
 import string
 import numpy as np
-import scipy.io as sio
 import matplotlib as mpl
 mpl.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
-import ntpath#
+import ntpath
 import csv
 import collections
+import tdt
 
-import JM_general_functions as jmf
-import JM_custom_figs as jmfig
+#import JM_general_functions as jmf
+#import JM_custom_figs as jmfig
+
+import photogui_fx
 
 # Main class for GUI
 class Window(Frame):
@@ -125,20 +126,26 @@ class Window(Frame):
         alert('Feature coming soon!')
         
     def loadfile(self):
-        self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
-#        self.filename = 'R:\\DA_and_Reward\\es334\\MCP1\\matfiles\\MCP1-2_s4.mat'
+        #self.filename = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
+        self.filename = 'C:\\Github\\PPP_analysis\\data\\Eelke-171027-111329\\'
         self.shortfilename.set(ntpath.basename(self.filename))
-        self.openmatfile()
+        self.opentdtfile()
     
-    def openmatfile(self):
-        a = sio.loadmat(self.filename, squeeze_me=True, struct_as_record=False) 
-        self.output = a['output']
-        try:
-            self.fs = self.output.fs
-        except:
-            self.fs = self.output.fs1     # add line to search for fs variable in output
-        self.getstreamfields()
-        self.getepochfields()
+    def opentdtfile(self):
+        tmp = tdt.read_block(self.filename, t2=2, evtype=['streams'])
+        self.streamfields = [v for v in vars(tmp.streams) if v not 'Fi2r']
+        tmp = tdt.read_block(self.filename, evtype=['epocs'])
+        self.epochfields = [v for v in vars(tmp.epocs)]
+        print('Read in file')
+        
+#        a = sio.loadmat(self.filename, squeeze_me=True, struct_as_record=False) 
+#        self.output = a['output']
+#        try:
+#            self.fs = self.output.fs
+#        except:
+#            self.fs = self.output.fs1     # add line to search for fs variable in output
+#        self.getstreamfields()
+#        self.getepochfields()
         self.updatesigoptions()
        
     def makesnips(self):
@@ -171,12 +178,13 @@ class Window(Frame):
         self.updateeventoptions()
 
     def getstreamfields(self):
-        self.streamfields = []
-        for x in self.output._fieldnames:
-            try:
-                len(getattr(self.output, x))
-                self.streamfields.append(x)
-            except: pass
+        self.streamfields = [v for v in vars(self.tmp.streams)]
+        print(self.streamfields)
+#        for x in vars(self.tmp.streams):
+#            try:
+#                len(getattr(self.output, x))
+#                self.streamfields.append(x)
+#            except: pass
             
     def getepochfields(self):
         self.epochfields = []
