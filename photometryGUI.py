@@ -71,14 +71,11 @@ class Window(Frame):
         self.prevtrialBtn = ttk.Button(self, text='Prev Trial', command=self.prevtrial)
         self.nexttrialBtn = ttk.Button(self, text='Next Trial', command=self.nexttrial)
         self.showallBtn = ttk.Button(self, text='Show All', command=self.showall)
-        
-#        self.noiseVar = BooleanVar(self.master)
-#        self.noisecheckBtn = ttk.Radiobutton(self, text='Remove noise', variable=self.noiseVar, value=True)
 
         # Label definitions
         self.shortfilename = StringVar(self.master)
         self.shortfilename.set('No file chosen')
-        self.filenameLbl = ttk.Label(self, textvariable=self.shortfilename)
+        self.filenameLbl = ttk.Label(self, textvariable=self.shortfilename, wraplength=200)
         
         self.baselineLbl = ttk.Label(self, text='Baseline (s)')
         self.lengthLbl = ttk.Label(self, text='Snipit length (s)')
@@ -110,10 +107,10 @@ class Window(Frame):
         
         # Packing grid with widgets
         self.f2.grid(column=2, row=0, columnspan=3, rowspan=3, sticky=(N,S,E,W))
-        self.f3.grid(column=6, row=0, columnspan=3, rowspan=3, sticky=(N,S,E,W))
+        self.f3.grid(column=5, row=0, columnspan=3, rowspan=3, sticky=(N,S,E,W))
         self.f4.grid(column=2, row=4, columnspan=2, rowspan=5, sticky=(N,S,E,W))
         self.f5.grid(column=4, row=4, columnspan=2, rowspan=5, sticky=(N,S,E,W))
-        self.f6.grid(column=6, row=4, columnspan=3, rowspan=5, sticky=(N,S,E,W))
+        self.f6.grid(column=6, row=4, columnspan=2, rowspan=5, sticky=(N,S,E,W))
         
         self.choosefileBtn.grid(column=0, row=0)
         self.loaddataBtn.grid(column=0, row=1)
@@ -134,7 +131,7 @@ class Window(Frame):
         self.noiseBtn.grid(column=9, row=7, sticky=(W,E))
         
         self.aboutLbl.grid(column=0, row=11, columnspan=3, sticky=W)
-        self.progress.grid(column=6, row=12)
+        self.progress.grid(column=0, row=12, columnspan=2, sticky=(W, E))
      
         self.blue = StringVar(self.master)       
         self.uv = StringVar(self.master)  
@@ -154,8 +151,9 @@ class Window(Frame):
         # open window to choose file
         #self.tdtfile = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
         self.tdtfile = 'C:\\Github\\PPP_analysis\\data\\Eelke-171027-111329\\'
-        self.shortfilename.set(ntpath.basename(self.tdtfile))
+        self.shortfilename.set(ntpath.dirname(self.tdtfile))
         
+        print(self.shortfilename.get())
         # opens file to get stream and epoch names
         self.getstreamandepochnames()
         
@@ -216,17 +214,18 @@ class Window(Frame):
         self.chooselicksMenu.grid(column=0, row=4)
         
     def loaddata(self):   
-        self.progress.start()
+        self.progress['value'] = 40
         # load in streams
         self.loadstreams()
+        self.progress['value'] = 60
         
         # process data
         self.processdata()
+        self.progress['value'] = 80
         
         # plot all session data
         self.sessionviewer()
-        
-        self.progress.stop()
+        self.progress['value'] = 100
         
     def loadstreams(self):
         try:
@@ -245,15 +244,15 @@ class Window(Frame):
         Y = np.fft.rfft(self.data, pt)
         Ynet = Y-X
     
-        datafilt = np.fft.irfft(Ynet)
-    
+        datafilt = np.fft.irfft(Ynet) 
         datafilt = sig.detrend(datafilt)
     
         b, a = sig.butter(9, 0.012, 'low', analog=True)
         self.datafilt = sig.filtfilt(b, a, datafilt)
         
     def sessionviewer(self):
-        fig1 = Figure(figsize=(3,2))
+        # plot blue and uv signals
+        fig1 = Figure(figsize=(4,2))
         ax = fig1.subplots()
 
         try:
@@ -262,21 +261,26 @@ class Window(Frame):
         try:
             ax.plot(self.datauv, color='m')
         except AttributeError: pass
-    
-        fig2 = Figure(figsize=(3,2))
+
+        # plot filtered signal
+        fig2 = Figure(figsize=(4,2))
         ax = fig2.subplots()
     
         try:
             ax.plot(self.datafilt, color='g')
         except: pass
         
+        #label axes
         for fig in [fig1, fig2]:
             try:
-                ax.set_xticks(np.multiply([0, 10, 20, 30, 40, 50, 60],60*self.fs))
+                ax=fig.axes[0]
+                maxtime=np.ceil(ax.get_xlim()[1] / self.fs / 60)
+                ax.set_xticks(np.multiply(np.arange(0, maxtime, 10),60*self.fs))
                 ax.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
                 ax.set_xlabel('Time (min)')        
             except: pass
         
+        #add figures to frames
         canvas = FigureCanvasTkAgg(fig1, self.f2)
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
@@ -284,8 +288,6 @@ class Window(Frame):
         canvas = FigureCanvasTkAgg(fig2, self.f3)
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
-        
-        
 
     def makesnips(self):
         # get events and number of bins from dropdown menus
@@ -299,7 +301,7 @@ class Window(Frame):
                                         t2sMap = self.t2sMap, fs = self.fs, bins=self.bins)
         self.snips = mastersnipper(self, self.events,
                                    bins=int(self.bins),
-                                   preTrial=10,
+                                   preTrial=int(self.baseline.get()),
                                    trialLength=int(self.length.get()),
                                    threshold=int(self.noiseth.get()))
         self.noiseindex = self.snips['noise']
@@ -309,6 +311,7 @@ class Window(Frame):
         
         # plot data
         self.singletrialviewer()
+        self.heatmapviewer()
         self.averagesnipsviewer()
         
     def setevents(self):
@@ -353,7 +356,7 @@ class Window(Frame):
         self.updateeventoptions()
 
     def singletrialviewer(self):
-        f = Figure(figsize=(3,2)) # 5,3
+        f = Figure(figsize=(2.67,2.67)) # 5,3
         ax = f.add_subplot(111)
         
         if self.noise:
@@ -366,9 +369,24 @@ class Window(Frame):
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
         
+    def heatmapviewer(self):
+        f = Figure(figsize=(2.67,2.67))
+        ax = f.add_subplot(111)
+        
+        if self.noise:
+            snips=self.snips_to_plot
+        else:
+            snips=np.asarray([i for (i,v) in zip(self.snips_to_plot, self.noiseindex) if not v])
+        
+        makeheatmap(ax, snips)
+        
+        canvas = FigureCanvasTkAgg(f, self.f5)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
+        
     def averagesnipsviewer(self):
         
-        f = Figure(figsize=(5,2)) # 5.3
+        f = Figure(figsize=(2.67,2.67)) # 5.3
         ax = f.add_subplot(111)
         
         if self.noise:
@@ -623,6 +641,26 @@ def trialsShadedFig(ax, trials, pps = 1, scale = 5, preTrial = 10,
     ax.text(xevent, ax.get_ylim()[1], eventText, ha='center',va='bottom')
     
     return ax
+
+def makeheatmap(ax, data, events=None, ylabel='Trials'):
+    ntrials = np.shape(data)[0]
+    xvals = np.linspace(-9.9,20,300)
+    yvals = np.arange(1, ntrials+2)
+    xx, yy = np.meshgrid(xvals, yvals)
+    
+    mesh = ax.pcolormesh(xx, yy, data, cmap='jet', shading = 'flat')
+    
+    if events:
+        ax.vlines(events, yvals[:-1], yvals[1:], color='w')
+    else:
+        print('No events')
+        
+    ax.set_ylabel(ylabel)
+    ax.set_yticks([1, ntrials])
+    ax.set_xticks([])
+    ax.invert_yaxis()
+    
+    return ax, mesh
 
 root = Tk()
 
