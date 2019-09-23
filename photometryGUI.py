@@ -62,42 +62,53 @@ class Window(Frame):
         self.f6 = ttk.Frame(self, style='inner.TFrame', relief='sunken',
                             borderwidth=5, height=200, width=200)
 
+        # Button definitions
         self.choosefileBtn = ttk.Button(self, text='Choose File', command=self.choosefile)
         self.loaddataBtn = ttk.Button(self, text='Load data', command=self.loaddata)
         self.makelickrunsBtn = ttk.Button(self, text='Lick runs', command=self.makelickruns)
         self.makesnipsBtn = ttk.Button(self, text='Make Snips', command=self.makesnips)
-        self.noiseBtn = ttk.Button(self, text='Toggle noise', command=self.togglenoise)
+        self.noiseBtn = ttk.Button(self, text='Turn noise off', command=self.togglenoise)
         self.prevtrialBtn = ttk.Button(self, text='Prev Trial', command=self.prevtrial)
         self.nexttrialBtn = ttk.Button(self, text='Next Trial', command=self.nexttrial)
         self.showallBtn = ttk.Button(self, text='Show All', command=self.showall)
+        
+#        self.noiseVar = BooleanVar(self.master)
+#        self.noisecheckBtn = ttk.Radiobutton(self, text='Remove noise', variable=self.noiseVar, value=True)
 
+        # Label definitions
         self.shortfilename = StringVar(self.master)
         self.shortfilename.set('No file chosen')
         self.filenameLbl = ttk.Label(self, textvariable=self.shortfilename)
         
-        self.lickrunsLbl = ttk.Label(self, text='x lick runs made')
         self.baselineLbl = ttk.Label(self, text='Baseline (s)')
-        self.snipitLbl = ttk.Label(self, text='Snipit length (s)')
+        self.lengthLbl = ttk.Label(self, text='Snipit length (s)')
         self.nbinsLbl = ttk.Label(self, text='No. of bins')
-#        self.chooseeventLbl = ttk.Label(self, text='Choose event')
+        self.noisethLbl = ttk.Label(self, text='Noise threshold')
         
+        # Field and entries
         self.baseline = StringVar(self.master)
         self.baselineField = ttk.Entry(self, textvariable=self.baseline)
         self.baselineField.insert(END, '10')
 
-        self.snipitlength = StringVar(self.master)
-        self.snipitField = ttk.Entry(self, textvariable=self.snipitlength)
-        self.snipitField.insert(END, '30')
+        self.length = StringVar(self.master)
+        self.lengthField = ttk.Entry(self, textvariable=self.length)
+        self.lengthField.insert(END, '30')
         
         self.nbins = StringVar(self.master)
         self.nbinsField = ttk.Entry(self, textvariable=self.nbins)
         self.nbinsField.insert(END, '300')
+        
+        self.noiseth = StringVar(self.master)
+        self.noisethField = ttk.Entry(self, textvariable=self.noiseth)
+        self.noisethField.insert(END, '10')
 
+        # Progress bar and about label
         self.progress = ttk.Progressbar(self, orient=HORIZONTAL, length=200, mode='determinate')
 
         self.aboutLbl = ttk.Label(self, text='Photometry Analyzer-2.0 by J McCutcheon')
-# Packing grid with widgets
+
         
+        # Packing grid with widgets
         self.f2.grid(column=2, row=0, columnspan=3, rowspan=3, sticky=(N,S,E,W))
         self.f3.grid(column=6, row=0, columnspan=3, rowspan=3, sticky=(N,S,E,W))
         self.f4.grid(column=2, row=4, columnspan=2, rowspan=5, sticky=(N,S,E,W))
@@ -108,19 +119,20 @@ class Window(Frame):
         self.loaddataBtn.grid(column=0, row=1)
         self.filenameLbl.grid(column=0, row=2, columnspan=2, sticky=W)
         
-        self.makelickrunsBtn.grid(column=0, row=4)
-        self.lickrunsLbl.grid(column=1, row=4)
+        self.makelickrunsBtn.grid(column=1, row=4)
         
         self.baselineLbl.grid(column=0, row=5, sticky=E)
         self.baselineField.grid(column=1, row=5)
-        self.snipitLbl.grid(column=0, row=6, sticky=E)
-        self.snipitField.grid(column=1, row=6)
+        self.lengthLbl.grid(column=0, row=6, sticky=E)
+        self.lengthField.grid(column=1, row=6)
         self.nbinsLbl.grid(column=0, row=7, sticky=E)
         self.nbinsField.grid(column=1, row=7)
-        
+        self.noisethLbl.grid(column=0, row=8, sticky=E)
+        self.noisethField.grid(column=1, row=8)
+               
         self.makesnipsBtn.grid(column=9, row=4, rowspan=2, sticky=(N, S, W,E))
         self.noiseBtn.grid(column=9, row=7, sticky=(W,E))
-
+        
         self.aboutLbl.grid(column=0, row=11, columnspan=3, sticky=W)
         self.progress.grid(column=6, row=12)
      
@@ -128,8 +140,11 @@ class Window(Frame):
         self.uv = StringVar(self.master)  
         self.eventsVar = StringVar(self.master)
         self.onsetVar = StringVar(self.master)
-        self.licksVar = StringVar(self.master)
+        self.lickrunsVar = StringVar(self.master)
         self.snipsVar = StringVar(self.master)
+        self.noisethVar = IntVar(self.master)
+        self.noise=True
+        
         self.updatesigoptions()
         self.updateeventoptions()
         
@@ -150,7 +165,6 @@ class Window(Frame):
         # update dropdown menu options
         self.updatesigoptions()
         self.updateeventoptions()
-        self.updatesnipoptions()
     
     def getstreamandepochnames(self):
         tmp = tdt.read_block(self.tdtfile, t2=2, evtype=['streams'])
@@ -182,10 +196,10 @@ class Window(Frame):
     def updateeventoptions(self):
         try:
             eventOptions = self.epochfields
-            lickOptions = self.epochfields
+            lickrunOptions = self.epochfields
         except AttributeError:
             eventOptions = ['None']
-            lickOptions = ['None']
+            lickrunOptions = ['None']
         
         self.chooseeventMenu = ttk.OptionMenu(self, self.eventsVar, eventOptions[0], *eventOptions)
         self.chooseeventMenu.grid(column=0, row=3)
@@ -198,10 +212,11 @@ class Window(Frame):
         self.onsetMenu = ttk.OptionMenu(self, self.onsetVar, onsetOptions[0], *onsetOptions)
         self.onsetMenu.grid(column=1, row=3)
 
-        self.chooselicksMenu = ttk.OptionMenu(self, self.licksVar, *lickOptions)
-        self.chooselicksMenu.grid(column=2, row=3)
+        self.chooselicksMenu = ttk.OptionMenu(self, self.lickrunsVar, lickrunOptions[0], *lickrunOptions)
+        self.chooselicksMenu.grid(column=0, row=4)
         
-    def loaddata(self):
+    def loaddata(self):   
+        self.progress.start()
         # load in streams
         self.loadstreams()
         
@@ -211,7 +226,9 @@ class Window(Frame):
         # plot all session data
         self.sessionviewer()
         
-    def loadstreams(self):       
+        self.progress.stop()
+        
+    def loadstreams(self):
         try:
             tmp = tdt.read_block(self.tdtfile, evtype=['streams'], store=self.blue.get())
             self.data = getattr(tmp.streams, self.blue.get())['data']
@@ -267,6 +284,8 @@ class Window(Frame):
         canvas = FigureCanvasTkAgg(fig2, self.f3)
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
+        
+        
 
     def makesnips(self):
         # get events and number of bins from dropdown menus
@@ -278,7 +297,11 @@ class Window(Frame):
         self.randomevents = makerandomevents(120, max(self.tick)-120)
         self.bgTrials, self.pps = snipper(self.data, self.randomevents,
                                         t2sMap = self.t2sMap, fs = self.fs, bins=self.bins)
-        self.snips = mastersnipper(self, self.events)
+        self.snips = mastersnipper(self, self.events,
+                                   bins=int(self.bins),
+                                   preTrial=10,
+                                   trialLength=int(self.length.get()),
+                                   threshold=int(self.noiseth.get()))
         self.noiseindex = self.snips['noise']
         #self.getnoiseindex()
 
@@ -288,9 +311,6 @@ class Window(Frame):
         self.singletrialviewer()
         self.averagesnipsviewer()
         
-        # update snip options
-        self.updatesnipoptions()
-        
     def setevents(self):
         try:
             if self.eventsVar.get() == 'runs':
@@ -299,15 +319,22 @@ class Window(Frame):
                 self.eventepoc = getattr(self.epocs, self.eventsVar.get())
                 self.events = getattr(self.eventepoc, self.onsetVar.get())
 
-            self.lickepoc = getattr(self.epocs, self.licksVar.get())
+            self.lickepoc = getattr(self.epocs, self.lickrunsVar.get())
             self.licks = getattr(self.lickepoc, self.onsetVar.get())
         except:
             alert('Cannot set event')
-
-
-        
+  
     def togglenoise(self):
-        print('Toggle noise')
+        if self.noise:
+            self.noise = False
+            self.noiseBtn.config(text="Turn noise on")
+        else:
+            self.noise = True
+            self.noiseBtn.config(text="Turn noise off")
+            
+        try:
+            self.makesnips()
+        except: pass
         
     def prevtrial(self):
         print('Selecting prev trial')
@@ -329,36 +356,33 @@ class Window(Frame):
         f = Figure(figsize=(3,2)) # 5,3
         ax = f.add_subplot(111)
         
-        trialsFig(ax, self.snips_to_plot, noiseindex=self.noiseindex)
-        
-        alltrialVar = StringVar(self.f4)
-        ttk.Radiobutton(self.f4, text='All Trials', variable=alltrialVar, value='all').grid(
-                row=0, column=1)
-        ttk.Radiobutton(self.f4, text='Single Trial', variable=alltrialVar, value='single').grid(
-                row=1, column=1)
-
-        currenttrialVar = IntVar(self.f4)
-        currenttrialVar.set(0)
-        self.trialEntry = ttk.Entry(self.f4, textvariable=currenttrialVar).grid(
-                row=1, column=2)
+        if self.noise:
+            trialsFig(ax, self.snips_to_plot, noiseindex=self.noiseindex)
+        else:
+            snips = np.asarray([i for (i,v) in zip(self.snips_to_plot, self.noiseindex) if not v])
+            trialsFig(ax, snips)
      
         canvas = FigureCanvasTkAgg(f, self.f4)
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
         
     def averagesnipsviewer(self):
-        self.progress.start()
+        
         f = Figure(figsize=(5,2)) # 5.3
         ax = f.add_subplot(111)
         
-        trialsMultShadedFig(ax, [self.snips['uv'], self.snips['blue']],
+        if self.noise:
+            snips=self.snips_to_plot
+        else:
+            snips=np.asarray([i for (i,v) in zip(self.snips_to_plot, self.noiseindex) if not v])
+
+        trialsShadedFig(ax, snips,
                           self.pps,
                           eventText = self.eventsVar.get())
         
         canvas = FigureCanvasTkAgg(f, self.f6)
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
-        self.progress.stop()
 
     def time2samples(self):
         maxsamples = len(self.tick)*int(self.fs)
@@ -446,11 +470,7 @@ def mastersnipper(x, events,
                   bins=300,
                   preTrial=10,
                   trialLength=30,
-                  threshold=10,
-                  peak_between_time=[0, 1],
-                  output_as_dict=True,
-                  latency_events=[],
-                  latency_direction='pre'):
+                  threshold=10):
     if len(events) < 1:
         print('Cannot find any events. All outputs will be empty.')
         blueTrials, uvTrials, noiseindex, diffTrials, peak, latency = ([] for i in range(5))
@@ -564,22 +584,23 @@ def trialsFig(ax, trials, pps=1, preTrial=10, scale=5, noiseindex = [],
     
     return ax
 
-def trialsMultShadedFig(ax, trials, pps = 1, scale = 5, preTrial = 10,
-                        noiseindex=[],
-                        eventText = 'event', ylabel = '',
-                        linecolor=['m', 'b'], errorcolor=['r', 'g'],
-                        title=''):
-
-    for i in [0, 1]:
-        if len(noiseindex) > 0:
-            trials[i] = np.array([i for (i,v) in zip(trials[i], noiseindex) if not v])
-        yerror = [np.std(i)/np.sqrt(len(i)) for i in trials[i].T]
-        y = np.mean(trials[i],axis=0)
-        x = np.arange(0,len(y))
+def trialsShadedFig(ax, trials, pps = 1, scale = 5, preTrial = 10,
+                    noiseindex=[],
+                    eventText = 'event', ylabel = '',
+                    linecolor='k', errorcolor='grey'):
     
-        ax.plot(x, y, c=linecolor[i], linewidth=2)
+    if len(noiseindex) > 0:
+        trials = np.array([i for (i,v) in zip(trials, noiseindex) if not v])
+    
+    trials=np.asarray(trials)
+    
+    yerror = [np.std(i)/np.sqrt(len(i)) for i in trials.T]
+    y = np.mean(trials,axis=0)
+    x = np.arange(0,len(y))
+    
+    ax.plot(x, y, c=linecolor, linewidth=2)
 
-        errorpatch = ax.fill_between(x, y-yerror, y+yerror, color=errorcolor[i], alpha=0.4)
+    errorpatch = ax.fill_between(x, y-yerror, y+yerror, color=errorcolor, alpha=0.4)
     
     ax.set(ylabel = ylabel)
     ax.xaxis.set_visible(False)
@@ -600,9 +621,8 @@ def trialsMultShadedFig(ax, trials, pps = 1, scale = 5, preTrial = 10,
     xevent = pps * preTrial
     ax.plot([xevent, xevent],[ax.get_ylim()[0], ax.get_ylim()[1] - yrange/20],'--')
     ax.text(xevent, ax.get_ylim()[1], eventText, ha='center',va='bottom')
-    ax.set_title(title)
     
-    return ax, errorpatch
+    return ax
 
 root = Tk()
 
@@ -612,6 +632,18 @@ currdir = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\'
 app = Window(root)
 root.lift()
 root.mainloop()
+
+#alltrialVar = StringVar(self.f4)
+#ttk.Radiobutton(self.f4, text='All Trials', variable=alltrialVar, value='all').grid(
+#        row=0, column=1)
+#ttk.Radiobutton(self.f4, text='Single Trial', variable=alltrialVar, value='single').grid(
+#        row=1, column=1)
+#
+#currenttrialVar = IntVar(self.f4)
+#currenttrialVar.set(0)
+#self.trialEntry = ttk.Entry(self.f4, textvariable=currenttrialVar).grid(
+#        row=1, column=2)
+
 
 #        try:
 #            combined = np.concatenate((self.data, self.datauv), axis=0)
