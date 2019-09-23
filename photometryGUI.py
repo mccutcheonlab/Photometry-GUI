@@ -118,8 +118,8 @@ class Window(Frame):
         self.nbinsLbl.grid(column=0, row=7, sticky=E)
         self.nbinsField.grid(column=1, row=7)
         
-        self.makesnipsBtn.grid(column=9, row=4, sticky=(W,E))
-        self.noiseBtn.grid(column=9, row=5, sticky=(W,E))
+        self.makesnipsBtn.grid(column=9, row=4, rowspan=2, sticky=(N, S, W,E))
+        self.noiseBtn.grid(column=9, row=7, sticky=(W,E))
 
         self.aboutLbl.grid(column=0, row=11, columnspan=3, sticky=W)
         self.progress.grid(column=6, row=12)
@@ -129,6 +129,7 @@ class Window(Frame):
         self.eventsVar = StringVar(self.master)
         self.onsetVar = StringVar(self.master)
         self.licksVar = StringVar(self.master)
+        self.snipsVar = StringVar(self.master)
         self.updatesigoptions()
         self.updateeventoptions()
         
@@ -184,9 +185,17 @@ class Window(Frame):
         except AttributeError:
             eventOptions = ['None']
             lickOptions = ['None']
+            
+        try:
+            snipOptions = self.snipfields
+        except AttributeError:
+            snipOptions = ['None']
         
         self.chooseeventMenu = ttk.OptionMenu(self, self.eventsVar, *eventOptions)
         self.chooseeventMenu.grid(column=0, row=3)
+        
+        self.choosesnipMenu = ttk.OptionMenu(self, self.snipsVar, *snipOptions)
+        self.choosesnipMenu.grid(column=9, row=6)
         
         onsetOptions = ['onset', 'offset']
         self.onsetMenu = ttk.OptionMenu(self, self.onsetVar, *onsetOptions)
@@ -273,7 +282,8 @@ class Window(Frame):
         self.bgTrials, self.pps = snipper(self.data, self.randomevents,
                                         t2sMap = self.t2sMap, fs = self.fs, bins=self.bins)
         self.snips = mastersnipper(self, self.events)
-        self.getnoiseindex()
+        self.noiseindex = self.snips['noise']
+        #self.getnoiseindex()
         
         # plot data
         self.singletrialviewer()
@@ -325,20 +335,20 @@ class Window(Frame):
         f = Figure(figsize=(3,2)) # 5,3
         ax = f.add_subplot(111)
         
-        jmfig.trialsFig(ax, self.snips['blue'], noiseindex=self.noiseindex)
+        trialsFig(ax, self.snips['blue'], noiseindex=self.noiseindex)
         
-        alltrialVar = StringVar(self.f3)
-        ttk.Radiobutton(self.f3, text='All Trials', variable=alltrialVar, value='all').grid(
+        alltrialVar = StringVar(self.f4)
+        ttk.Radiobutton(self.f4, text='All Trials', variable=alltrialVar, value='all').grid(
                 row=0, column=1)
-        ttk.Radiobutton(self.f3, text='Single Trial', variable=alltrialVar, value='single').grid(
+        ttk.Radiobutton(self.f4, text='Single Trial', variable=alltrialVar, value='single').grid(
                 row=1, column=1)
 
-        currenttrialVar = IntVar(self.f3)
+        currenttrialVar = IntVar(self.f4)
         currenttrialVar.set(0)
-        self.trialEntry = ttk.Entry(self.f3, textvariable=currenttrialVar).grid(
+        self.trialEntry = ttk.Entry(self.f4, textvariable=currenttrialVar).grid(
                 row=1, column=2)
      
-        canvas = FigureCanvasTkAgg(f, self.f3)
+        canvas = FigureCanvasTkAgg(f, self.f4)
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
         
@@ -347,12 +357,12 @@ class Window(Frame):
         f = Figure(figsize=(5,2)) # 5.3
         ax = f.add_subplot(111)
         
-        jmfig.trialsMultShadedFig(ax, [self.snips['uv'], self.snips['blue']],
+        trialsMultShadedFig(ax, [self.snips['uv'], self.snips['blue']],
                           self.pps,
                           eventText = self.eventsVar.get())
         
-        canvas = FigureCanvasTkAgg(f, self.f4)
-        canvas.show()
+        canvas = FigureCanvasTkAgg(f, self.f6)
+        canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
         self.progress.stop()
 
@@ -523,6 +533,82 @@ def med_abs_dev(data, b=1.4826):
     mad = np.median(devs)*b
                    
     return mad
+
+def trialsFig(ax, trials, pps=1, preTrial=10, scale=5, noiseindex = [],
+              plotnoise=True,
+              eventText='event', 
+              ylabel=''):
+
+    if len(noiseindex) > 0:
+        trialsNoise = np.array([i for (i,v) in zip(trials, noiseindex) if v])
+        trials = np.array([i for (i,v) in zip(trials, noiseindex) if not v])
+        if plotnoise == True:
+            ax.plot(trialsNoise.transpose(), c='red', alpha=0.1)
+        
+    ax.plot(trials.transpose(), c='grey', alpha=0.4)
+    ax.plot(np.mean(trials,axis=0), c='k', linewidth=2)
+     
+    ax.set(ylabel = ylabel)
+    ax.xaxis.set_visible(False)
+            
+    scalebar = scale * pps
+
+    yrange = ax.get_ylim()[1] - ax.get_ylim()[0]
+    scalebary = (yrange / 10) + ax.get_ylim()[0]
+    scalebarx = [ax.get_xlim()[1] - scalebar, ax.get_xlim()[1]]
+    
+    ax.plot(scalebarx, [scalebary, scalebary], c='k', linewidth=2)
+    ax.text((scalebarx[0] + (scalebar/2)), scalebary-(yrange/50), str(scale) +' s', ha='center',va='top')
+ 
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    
+    xevent = pps * preTrial  
+    ax.plot([xevent, xevent],[ax.get_ylim()[0], ax.get_ylim()[1] - yrange/20],'--')
+    ax.text(xevent, ax.get_ylim()[1], eventText, ha='center',va='bottom')
+    
+    return ax
+
+def trialsMultShadedFig(ax, trials, pps = 1, scale = 5, preTrial = 10,
+                        noiseindex=[],
+                        eventText = 'event', ylabel = '',
+                        linecolor=['m', 'b'], errorcolor=['r', 'g'],
+                        title=''):
+
+    for i in [0, 1]:
+        if len(noiseindex) > 0:
+            trials[i] = np.array([i for (i,v) in zip(trials[i], noiseindex) if not v])
+        yerror = [np.std(i)/np.sqrt(len(i)) for i in trials[i].T]
+        y = np.mean(trials[i],axis=0)
+        x = np.arange(0,len(y))
+    
+        ax.plot(x, y, c=linecolor[i], linewidth=2)
+
+        errorpatch = ax.fill_between(x, y-yerror, y+yerror, color=errorcolor[i], alpha=0.4)
+    
+    ax.set(ylabel = ylabel)
+    ax.xaxis.set_visible(False)
+            
+    scalebar = scale * pps
+
+    yrange = ax.get_ylim()[1] - ax.get_ylim()[0]
+    scalebary = (yrange / 10) + ax.get_ylim()[0]
+    scalebarx = [ax.get_xlim()[1] - scalebar, ax.get_xlim()[1]]
+    
+    ax.plot(scalebarx, [scalebary, scalebary], c='k', linewidth=2)
+    ax.text((scalebarx[0] + (scalebar/2)), scalebary-(yrange/50), '5 s', ha='center',va='top')
+ 
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    
+    xevent = pps * preTrial
+    ax.plot([xevent, xevent],[ax.get_ylim()[0], ax.get_ylim()[1] - yrange/20],'--')
+    ax.text(xevent, ax.get_ylim()[1], eventText, ha='center',va='bottom')
+    ax.set_title(title)
+    
+    return ax, errorpatch
 
 root = Tk()
 
