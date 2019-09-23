@@ -54,20 +54,28 @@ class Window(Frame):
         self.f2 = ttk.Frame(self, style='inner.TFrame', relief='sunken',
                             borderwidth=5, height=150)
         self.f3 = ttk.Frame(self, style='inner.TFrame', relief='sunken',
-                            borderwidth=5, height=200, width=400)
+                            borderwidth=5, height=150)
         self.f4 = ttk.Frame(self, style='inner.TFrame', relief='sunken',
-                            borderwidth=5, height=200, width=400)
+                            borderwidth=5, height=200, width=200)
+        self.f5 = ttk.Frame(self, style='inner.TFrame', relief='sunken',
+                            borderwidth=5, height=200, width=200)
+        self.f6 = ttk.Frame(self, style='inner.TFrame', relief='sunken',
+                            borderwidth=5, height=200, width=200)
 
-        self.processBtn = ttk.Button(self, text='Process Signals', command=self.processdata)
         self.choosefileBtn = ttk.Button(self, text='Choose File', command=self.choosefile)
-        self.makesnipsBtn = ttk.Button(self, text='Make Snips', command=self.makesnips)
-        self.makelickrunsBtn = ttk.Button(self, text='Lick runs', command=self.makelickruns)
         self.loaddataBtn = ttk.Button(self, text='Load data', command=self.loaddata)
-        
+        self.makelickrunsBtn = ttk.Button(self, text='Lick runs', command=self.makelickruns)
+        self.makesnipsBtn = ttk.Button(self, text='Make Snips', command=self.makesnips)
+        self.noiseBtn = ttk.Button(self, text='Toggle noise', command=self.togglenoise)
+        self.prevtrialBtn = ttk.Button(self, text='Prev Trial', command=self.prevtrial)
+        self.nexttrialBtn = ttk.Button(self, text='Next Trial', command=self.nexttrial)
+        self.showallBtn = ttk.Button(self, text='Show All', command=self.showall)
+
         self.shortfilename = StringVar(self.master)
         self.shortfilename.set('No file chosen')
         self.filenameLbl = ttk.Label(self, textvariable=self.shortfilename)
         
+        self.lickrunsLbl = ttk.Label(self, text='x lick runs made')
         self.baselineLbl = ttk.Label(self, text='Baseline (s)')
         self.snipitLbl = ttk.Label(self, text='Snipit length (s)')
         self.nbinsLbl = ttk.Label(self, text='No. of bins')
@@ -90,28 +98,31 @@ class Window(Frame):
         self.aboutLbl = ttk.Label(self, text='Photometry Analyzer-2.0 by J McCutcheon')
 # Packing grid with widgets
         
-        self.f2.grid(column=2, row=0, columnspan=8, rowspan=3, sticky=(N,S,E,W))
-        self.f3.grid(column=0, row=4, columnspan=4, sticky=(N,S,E,W))
-        self.f4.grid(column=4, row=4, columnspan=4, sticky=(N,S,E,W))
+        self.f2.grid(column=2, row=0, columnspan=3, rowspan=3, sticky=(N,S,E,W))
+        self.f3.grid(column=6, row=0, columnspan=3, rowspan=3, sticky=(N,S,E,W))
+        self.f4.grid(column=2, row=4, columnspan=2, rowspan=5, sticky=(N,S,E,W))
+        self.f5.grid(column=4, row=4, columnspan=2, rowspan=5, sticky=(N,S,E,W))
+        self.f6.grid(column=6, row=4, columnspan=3, rowspan=5, sticky=(N,S,E,W))
         
-        self.processBtn.grid(column=0, row=0)
-        self.choosefileBtn.grid(column=0, row=1)
+        self.choosefileBtn.grid(column=0, row=0)
+        self.loaddataBtn.grid(column=0, row=1)
         self.filenameLbl.grid(column=0, row=2, columnspan=2, sticky=W)
         
-        self.loaddataBtn.grid(column=1, row=0)
+        self.makelickrunsBtn.grid(column=0, row=4)
+        self.lickrunsLbl.grid(column=1, row=4)
         
-        self.baselineLbl.grid(column=0, row=3, sticky=E)
-        self.baselineField.grid(column=1, row=3)
-        self.snipitLbl.grid(column=2, row=3, sticky=E)
-        self.snipitField.grid(column=3, row=3)
-        self.nbinsLbl.grid(column=4, row=3, sticky=E)
-        self.nbinsField.grid(column=5, row=3)
+        self.baselineLbl.grid(column=0, row=5, sticky=E)
+        self.baselineField.grid(column=1, row=5)
+        self.snipitLbl.grid(column=0, row=6, sticky=E)
+        self.snipitField.grid(column=1, row=6)
+        self.nbinsLbl.grid(column=0, row=7, sticky=E)
+        self.nbinsField.grid(column=1, row=7)
         
-        self.makesnipsBtn.grid(column=9, row=3, sticky=(W,E))
-        self.makelickrunsBtn.grid(column=8, row=4, columnspan=2)
+        self.makesnipsBtn.grid(column=9, row=4, sticky=(W,E))
+        self.noiseBtn.grid(column=9, row=5, sticky=(W,E))
 
-        self.aboutLbl.grid(column=0, row=5, columnspan=3, sticky=W)
-        self.progress.grid(column=0, row=6)
+        self.aboutLbl.grid(column=0, row=11, columnspan=3, sticky=W)
+        self.progress.grid(column=6, row=12)
      
         self.blue = StringVar(self.master)       
         self.uv = StringVar(self.master)  
@@ -163,8 +174,8 @@ class Window(Frame):
         self.chooseblueMenu = ttk.OptionMenu(self, self.blue, *sigOptions)
         self.chooseuvMenu = ttk.OptionMenu(self, self.uv, *sigOptions)
         
-        self.chooseblueMenu.grid(column=1, row=1)
-        self.chooseuvMenu.grid(column=1, row=2)
+        self.chooseblueMenu.grid(column=1, row=0)
+        self.chooseuvMenu.grid(column=1, row=1)
 
     def updateeventoptions(self):
         try:
@@ -175,14 +186,14 @@ class Window(Frame):
             lickOptions = ['None']
         
         self.chooseeventMenu = ttk.OptionMenu(self, self.eventsVar, *eventOptions)
-        self.chooseeventMenu.grid(column=6, row=3)
+        self.chooseeventMenu.grid(column=0, row=3)
         
         onsetOptions = ['onset', 'offset']
         self.onsetMenu = ttk.OptionMenu(self, self.onsetVar, *onsetOptions)
-        self.onsetMenu.grid(column=7, row=3)
+        self.onsetMenu.grid(column=1, row=3)
 
         self.chooselicksMenu = ttk.OptionMenu(self, self.licksVar, *lickOptions)
-        self.chooselicksMenu.grid(column=8, row=3)
+        self.chooselicksMenu.grid(column=2, row=3)
         
     def loaddata(self):
         # load in streams
@@ -219,43 +230,35 @@ class Window(Frame):
         self.datafilt = sig.filtfilt(b, a, datafilt)
         
     def sessionviewer(self):
-        f = Figure(figsize=(7,2))
-        ax = f.subplots(ncols=2)
+        fig1 = Figure(figsize=(3,2))
+        ax = fig1.subplots()
 
         try:
-            ax[0].plot(self.data, color='blue')
+            ax.plot(self.data, color='blue')
         except AttributeError: pass
         try:
-            ax[0].plot(self.datauv, color='m')
+            ax.plot(self.datauv, color='m')
         except AttributeError: pass
     
+        fig2 = Figure(figsize=(3,2))
+        ax = fig2.subplots()
+    
         try:
-            ax[1].plot(self.datafilt, color='g')
+            ax.plot(self.datafilt, color='g')
         except: pass
         
-        for axis in ax:
+        for fig in [fig1, fig2]:
             try:
-                axis.set_xticks(np.multiply([0, 10, 20, 30, 40, 50, 60],60*self.fs))
-                axis.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
-                axis.set_xlabel('Time (min)')        
+                ax.set_xticks(np.multiply([0, 10, 20, 30, 40, 50, 60],60*self.fs))
+                ax.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
+                ax.set_xlabel('Time (min)')        
             except: pass
-#        try:
-#            combined = np.concatenate((self.data, self.datauv), axis=0)
-#            upper = jmf.findpercentilevalue(combined, 0.95)
-#            lower = jmf.findpercentilevalue(combined, 0.05)
-#            ax[1].set_ylim([lower, upper])
-#        except: print('Getting y-axis limits for session viewer is not working')
         
-#        try:
-#            for i, x in enumerate(self.epochfields):
-#                print(i, x)
-##                onset = getattr(output, x).onset * self.fs
-##                ax[0].scatter(onset, [i]*len(onset))
-#        except:
-#            print('could not plot events')
-#            pass
+        canvas = FigureCanvasTkAgg(fig1, self.f2)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
         
-        canvas = FigureCanvasTkAgg(f, self.f2)
+        canvas = FigureCanvasTkAgg(fig2, self.f3)
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
 
@@ -298,6 +301,18 @@ class Window(Frame):
         sigSum = [np.sum(abs(i)) for i in self.snips['blue']]
         sigSD = [np.std(i) for i in self.snips['blue']]
         self.noiseindex = [i > bgMAD*self.threshold for i in sigSum]
+        
+    def togglenoise(self):
+        print('Toggle noise')
+        
+    def prevtrial(self):
+        print('Selecting prev trial')
+        
+    def nexttrial(self):
+        print('Selecting next trial')
+        
+    def showall(self):
+        print('Showing all trials')
 
     def makelickruns(self):
         self.setevents()
@@ -517,3 +532,19 @@ currdir = 'C:\\Users\\jaimeHP\\Documents\\Test Data\\'
 app = Window(root)
 root.lift()
 root.mainloop()
+
+#        try:
+#            combined = np.concatenate((self.data, self.datauv), axis=0)
+#            upper = jmf.findpercentilevalue(combined, 0.95)
+#            lower = jmf.findpercentilevalue(combined, 0.05)
+#            ax[1].set_ylim([lower, upper])
+#        except: print('Getting y-axis limits for session viewer is not working')
+        
+#        try:
+#            for i, x in enumerate(self.epochfields):
+#                print(i, x)
+##                onset = getattr(output, x).onset * self.fs
+##                ax[0].scatter(onset, [i]*len(onset))
+#        except:
+#            print('could not plot events')
+#            pass
