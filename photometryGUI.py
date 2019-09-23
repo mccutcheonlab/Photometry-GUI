@@ -150,6 +150,7 @@ class Window(Frame):
         # update dropdown menu options
         self.updatesigoptions()
         self.updateeventoptions()
+        self.updatesnipoptions()
     
     def getstreamandepochnames(self):
         tmp = tdt.read_block(self.tdtfile, t2=2, evtype=['streams'])
@@ -172,8 +173,8 @@ class Window(Frame):
         except AttributeError:
             sigOptions = ['None']
             
-        self.chooseblueMenu = ttk.OptionMenu(self, self.blue, *sigOptions)
-        self.chooseuvMenu = ttk.OptionMenu(self, self.uv, *sigOptions)
+        self.chooseblueMenu = ttk.OptionMenu(self, self.blue, sigOptions[0], *sigOptions)
+        self.chooseuvMenu = ttk.OptionMenu(self, self.uv, sigOptions[0], *sigOptions)
         
         self.chooseblueMenu.grid(column=1, row=0)
         self.chooseuvMenu.grid(column=1, row=1)
@@ -185,20 +186,16 @@ class Window(Frame):
         except AttributeError:
             eventOptions = ['None']
             lickOptions = ['None']
-            
-        try:
-            snipOptions = self.snipfields
-        except AttributeError:
-            snipOptions = ['None']
         
-        self.chooseeventMenu = ttk.OptionMenu(self, self.eventsVar, *eventOptions)
+        self.chooseeventMenu = ttk.OptionMenu(self, self.eventsVar, eventOptions[0], *eventOptions)
         self.chooseeventMenu.grid(column=0, row=3)
-        
-        self.choosesnipMenu = ttk.OptionMenu(self, self.snipsVar, *snipOptions)
+
+        snipOptions = ['blue', 'uv', 'filt', 'filt_z']
+        self.choosesnipMenu = ttk.OptionMenu(self, self.snipsVar, snipOptions[0], *snipOptions)
         self.choosesnipMenu.grid(column=9, row=6)
-        
+   
         onsetOptions = ['onset', 'offset']
-        self.onsetMenu = ttk.OptionMenu(self, self.onsetVar, *onsetOptions)
+        self.onsetMenu = ttk.OptionMenu(self, self.onsetVar, onsetOptions[0], *onsetOptions)
         self.onsetMenu.grid(column=1, row=3)
 
         self.chooselicksMenu = ttk.OptionMenu(self, self.licksVar, *lickOptions)
@@ -284,10 +281,15 @@ class Window(Frame):
         self.snips = mastersnipper(self, self.events)
         self.noiseindex = self.snips['noise']
         #self.getnoiseindex()
+
+        self.snips_to_plot = self.snips[self.snipsVar.get()]
         
         # plot data
         self.singletrialviewer()
         self.averagesnipsviewer()
+        
+        # update snip options
+        self.updatesnipoptions()
         
     def setevents(self):
         try:
@@ -302,15 +304,7 @@ class Window(Frame):
         except:
             alert('Cannot set event')
 
-    def getnoiseindex(self):
-        self.noisemethod = 'sum'
-        self.threshold = 8
-        bgMAD = findnoise(self.data, self.randomevents,
-                              t2sMap = self.t2sMap, fs = self.fs, bins=self.bins,
-                              method=self.noisemethod)          
-        sigSum = [np.sum(abs(i)) for i in self.snips['blue']]
-        sigSD = [np.std(i) for i in self.snips['blue']]
-        self.noiseindex = [i > bgMAD*self.threshold for i in sigSum]
+
         
     def togglenoise(self):
         print('Toggle noise')
@@ -335,7 +329,7 @@ class Window(Frame):
         f = Figure(figsize=(3,2)) # 5,3
         ax = f.add_subplot(111)
         
-        trialsFig(ax, self.snips['blue'], noiseindex=self.noiseindex)
+        trialsFig(ax, self.snips_to_plot, noiseindex=self.noiseindex)
         
         alltrialVar = StringVar(self.f4)
         ttk.Radiobutton(self.f4, text='All Trials', variable=alltrialVar, value='all').grid(
@@ -494,7 +488,7 @@ def mastersnipper(x, events,
         output['blue'] = blueTrials
         output['uv'] = uvTrials
         output['filt'] = filtTrials
-        output['filtz'] = filtTrials_z
+        output['filt_z'] = filtTrials_z
         output['noise'] = noiseindex
         
         return output
@@ -634,3 +628,13 @@ root.mainloop()
 #        except:
 #            print('could not plot events')
 #            pass
+#
+#    def getnoiseindex(self):
+#        self.noisemethod = 'sum'
+#        self.threshold = 8
+#        bgMAD = findnoise(self.data, self.randomevents,
+#                              t2sMap = self.t2sMap, fs = self.fs, bins=self.bins,
+#                              method=self.noisemethod)          
+#        sigSum = [np.sum(abs(i)) for i in self.snips['blue']]
+#        sigSD = [np.std(i) for i in self.snips['blue']]
+#        self.noiseindex = [i > bgMAD*self.threshold for i in sigSum]
