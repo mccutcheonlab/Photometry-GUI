@@ -18,7 +18,7 @@ import matplotlib as mpl
 mpl.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
+from matplotlib.ticker import StrMethodFormatter
 import ntpath
 import csv
 import collections
@@ -71,6 +71,7 @@ class Window(Frame):
         self.prevtrialBtn = ttk.Button(self, text='Prev Trial', command=self.prevtrial)
         self.nexttrialBtn = ttk.Button(self, text='Next Trial', command=self.nexttrial)
         self.showallBtn = ttk.Button(self, text='Show All', command=self.showall)
+        self.refreshBtn = ttk.Button(self, text='Refresh', command=self.makesnips)
 
         # Label definitions
         self.shortfilename = StringVar(self.master)
@@ -136,9 +137,10 @@ class Window(Frame):
         self.currenttrialField.grid(column=3, row=9)
         self.showallBtn.grid(column=3, row=10)
         
-               
+        self.refreshBtn.grid(column=7, row=9)
+        
         self.makesnipsBtn.grid(column=9, row=4, rowspan=2, sticky=(N, S, W,E))
-        self.noiseBtn.grid(column=9, row=7, sticky=(W,E))
+        self.noiseBtn.grid(column=9, row=6, rowspan=2, sticky=(N, S, W,E))
         
         self.aboutLbl.grid(column=0, row=11, columnspan=3, sticky=W)
         self.progress.grid(column=0, row=12, columnspan=2, sticky=(W, E))
@@ -220,7 +222,7 @@ class Window(Frame):
 
         snipOptions = ['blue', 'uv', 'filt', 'filt_z']
         self.choosesnipMenu = ttk.OptionMenu(self, self.snipsVar, snipOptions[0], *snipOptions)
-        self.choosesnipMenu.grid(column=9, row=6)
+        self.choosesnipMenu.grid(column=6, row=9)
    
         onsetOptions = ['onset', 'offset']
         self.onsetMenu = ttk.OptionMenu(self, self.onsetVar, onsetOptions[0], *onsetOptions)
@@ -267,8 +269,13 @@ class Window(Frame):
         self.datafilt = sig.filtfilt(b, a, datafilt)
         
     def sessionviewer(self):
+        # parameters for polt bounding boxes
+        bottom=0.23
+        
         # plot blue and uv signals
         fig1 = Figure(figsize=(4,2))
+        fig1.subplotpars.bottom=bottom
+        fig1.subplotpars.left=0.18
         ax = fig1.subplots()
 
         try:
@@ -277,14 +284,20 @@ class Window(Frame):
         try:
             ax.plot(self.datauv, color='m')
         except AttributeError: pass
+        ax.set_ylabel('F')
+        
 
         # plot filtered signal
         fig2 = Figure(figsize=(4,2))
+        fig2.subplotpars.bottom=bottom
+        fig2.subplotpars.left=0.2
         ax = fig2.subplots()
     
         try:
             ax.plot(self.datafilt, color='g')
         except: pass
+        ax.set_ylabel('Delta F')
+        ax.yaxis.set_major_formatter(StrMethodFormatter('{x:.1}'))
         
         #label axes
         for fig in [fig1, fig2]:
@@ -329,6 +342,7 @@ class Window(Frame):
         else:
             self.ylabel='Delta F'
         
+        self.maxtrials=np.shape(self.snips_to_plot)[0]
         self.getcurrenttrial()
         
         # plot data
@@ -354,14 +368,13 @@ class Window(Frame):
         except:
             alert('Cannot set licks')
             
-    def getcurrenttrial(self):       
-        maxtrials = np.shape(self.snips_to_plot)[0]
+    def getcurrenttrial(self):
         try:
             trial_entered = int(self.currenttrial.get())
-            if trial_entered < 1 or trial_entered > maxtrials:
+            if trial_entered < 1 or trial_entered > self.maxtrials:
                 self.trial_to_plot = 'all'
             else:
-                self.trial_to_plot = trial_entered
+                self.trial_to_plot = trial_entered-1
         except:
             self.trial_to_plot = 'all'
   
@@ -378,13 +391,22 @@ class Window(Frame):
         except: pass
         
     def prevtrial(self):
-        print('Selecting prev trial')
-        self.currenttrial.set(str(int(self.currenttrial.get()) - 1))
+        try:
+            if int(self.currenttrial.get()) == 1:
+                self.currenttrial.set(str(self.maxtrials))
+            else:
+                self.currenttrial.set(str(int(self.currenttrial.get()) - 1))
+        except ValueError:
+            self.currenttrial.set(str(self.maxtrials))
         self.makesnips()
         
     def nexttrial(self):
-        print('Selecting next trial')
-        self.currenttrial.set(str(int(self.currenttrial.get()) + 1))
+        try:
+            if int(self.currenttrial.get()) == self.maxtrials:
+                self.currenttrial.set(str(1))  
+            self.currenttrial.set(str(int(self.currenttrial.get()) + 1))
+        except ValueError:
+            self.currenttrial.set(str(1))
         self.makesnips()
         
     def showall(self):
@@ -402,7 +424,7 @@ class Window(Frame):
 
     def singletrialviewer(self):
         f = Figure(figsize=(2.67,2.67)) # 5,3
-        f.subplotpars.left=0.2
+        f.subplotpars.left=0.3
         ax = f.subplots()
         
         if self.trial_to_plot != 'all':
@@ -425,6 +447,7 @@ class Window(Frame):
         
     def heatmapviewer(self):
         f = Figure(figsize=(2.67,2.67))
+        f.subplotpars.left=0.2
         ax = f.add_subplot(111)
         
         if self.noise:
@@ -432,7 +455,7 @@ class Window(Frame):
         else:
             snips=np.asarray([i for (i,v) in zip(self.snips_to_plot, self.noiseindex) if not v])
         
-        makeheatmap(ax, snips)
+        makeheatmap(ax, snips, self.trial_to_plot)
         
         canvas = FigureCanvasTkAgg(f, self.f5)
         canvas.draw()
@@ -441,7 +464,7 @@ class Window(Frame):
     def averagesnipsviewer(self):
         
         f = Figure(figsize=(2.67,2.67)) # 5.3
-        f.subplotpars.left=0.2
+        f.subplotpars.left=0.3
         ax = f.subplots()
  
         if self.noise:
@@ -645,6 +668,8 @@ def trialsFig(ax, trials, pps=1, preTrial=10, scale=5, noiseindex = [],
     scalebary = (yrange / 10) + ax.get_ylim()[0]
     scalebarx = [ax.get_xlim()[1] - scalebar, ax.get_xlim()[1]]
     
+    ax.yaxis.set_major_formatter(StrMethodFormatter('{x:.2f}'))
+    
     ax.plot(scalebarx, [scalebary, scalebary], c='k', linewidth=2)
     ax.text((scalebarx[0] + (scalebar/2)), scalebary-(yrange/50), str(scale) +' s', ha='center',va='top')
  
@@ -685,6 +710,8 @@ def trialsShadedFig(ax, trials, pps=1, scale=5, preTrial=10,
     scalebary = (yrange / 10) + ax.get_ylim()[0]
     scalebarx = [ax.get_xlim()[1] - scalebar, ax.get_xlim()[1]]
     
+    ax.yaxis.set_major_formatter(StrMethodFormatter('{x:.2f}'))
+    
     ax.plot(scalebarx, [scalebary, scalebary], c='k', linewidth=2)
     ax.text((scalebarx[0] + (scalebar/2)), scalebary-(yrange/50), '5 s', ha='center',va='top')
  
@@ -698,7 +725,7 @@ def trialsShadedFig(ax, trials, pps=1, scale=5, preTrial=10,
     
     return ax
 
-def makeheatmap(ax, data, events=None, ylabel='Trials'):
+def makeheatmap(ax, data, trial_to_plot, events=None, ylabel='Trial'):
     ntrials = np.shape(data)[0]
     xvals = np.linspace(-9.9,20,300)
     yvals = np.arange(1, ntrials+2)
@@ -712,7 +739,10 @@ def makeheatmap(ax, data, events=None, ylabel='Trials'):
         print('No events')
         
     ax.set_ylabel(ylabel)
-    ax.set_yticks([1, ntrials])
+    if trial_to_plot == 'all':
+        ax.set_yticks([1, ntrials])
+    else:
+        ax.set_yticks([1, trial_to_plot+1, ntrials])
     ax.set_xticks([])
     ax.invert_yaxis()
     
