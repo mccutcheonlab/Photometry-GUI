@@ -63,7 +63,7 @@ class Window(Frame):
                             borderwidth=5, height=200, width=200)
 
         # Button definitions
-        self.choosefileBtn = ttk.Button(self, text='Choose File', command=self.choosefile)
+        self.choosefileBtn = ttk.Button(self, text='Choose Tank', command=self.choosefile)
         self.loaddataBtn = ttk.Button(self, text='Load data', command=self.loaddata)
         self.makelickrunsBtn = ttk.Button(self, text='Lick runs', command=self.makelickruns)
         self.makesnipsBtn = ttk.Button(self, text='Make Snips', command=self.makesnips)
@@ -75,7 +75,7 @@ class Window(Frame):
 
         # Label definitions
         self.shortfilename = StringVar(self.master)
-        self.shortfilename.set('No file chosen')
+        self.shortfilename.set('No tank chosen')
         self.filenameLbl = ttk.Label(self, textvariable=self.shortfilename, wraplength=200)
         
         self.baselineLbl = ttk.Label(self, text='Baseline (s)')
@@ -159,7 +159,7 @@ class Window(Frame):
         
         self.sessionviewer()
         
-        self.quickstart()
+        #self.quickstart()
         
     def quickstart(self):
         self.choosefile()
@@ -168,7 +168,8 @@ class Window(Frame):
     def choosefile(self):
         # open window to choose file
         #self.tdtfile = filedialog.askopenfilename(initialdir=currdir, title='Select a file.')
-        self.tdtfile = 'C:\\Github\\PPP_analysis\\data\\Eelke-171027-111329\\'
+        self.tdtfile = filedialog.askdirectory(initialdir=currdir, title='Select a tank.')
+        #self.tdtfile = 'C:\\Github\\PPP_analysis\\data\\Eelke-171027-111329\\'
         self.shortfilename.set(ntpath.dirname(self.tdtfile))
         
         print(self.shortfilename.get())
