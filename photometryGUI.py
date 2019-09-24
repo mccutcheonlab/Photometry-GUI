@@ -37,7 +37,7 @@ class Window(Frame):
         f1 = ttk.Style()
         f1.configure('.', background='powder blue', padding=5)
         f1.configure('TButton', width=15, sticky=(E,W))
-        f1.configure('TEntry', width=10)
+        f1.configure('TEntry', width=7)
         f2 = ttk.Style()
         f2.configure('inner.TFrame', background='light cyan')
         
@@ -135,9 +135,9 @@ class Window(Frame):
         self.prevtrialBtn.grid(column=2, row=9)
         self.nexttrialBtn.grid(column=2, row=10)
         self.currenttrialField.grid(column=3, row=9)
-        self.showallBtn.grid(column=3, row=10)
+        self.showallBtn.grid(column=3, row=10, sticky=(W, E))
         
-        self.refreshBtn.grid(column=7, row=9)
+        self.refreshBtn.grid(column=7, row=9, sticky=(W, E))
         
         self.makesnipsBtn.grid(column=9, row=4, rowspan=2, sticky=(N, S, W,E))
         self.noiseBtn.grid(column=9, row=6, rowspan=2, sticky=(N, S, W,E))
