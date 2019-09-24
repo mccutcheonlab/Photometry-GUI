@@ -98,6 +98,10 @@ class Window(Frame):
         self.noiseth = StringVar(self.master)
         self.noisethField = ttk.Entry(self, textvariable=self.noiseth)
         self.noisethField.insert(END, '10')
+        
+        self.currenttrial = StringVar(self.master)
+        self.currenttrialField = ttk.Entry(self, textvariable=self.currenttrial)
+        self.currenttrialField.insert(END, '')
 
         # Progress bar and about label
         self.progress = ttk.Progressbar(self, orient=HORIZONTAL, length=200, mode='determinate')
@@ -126,6 +130,12 @@ class Window(Frame):
         self.nbinsField.grid(column=1, row=7)
         self.noisethLbl.grid(column=0, row=8, sticky=E)
         self.noisethField.grid(column=1, row=8)
+        
+        self.prevtrialBtn.grid(column=2, row=9)
+        self.nexttrialBtn.grid(column=2, row=10)
+        self.currenttrialField.grid(column=3, row=9)
+        self.showallBtn.grid(column=3, row=10)
+        
                
         self.makesnipsBtn.grid(column=9, row=4, rowspan=2, sticky=(N, S, W,E))
         self.noiseBtn.grid(column=9, row=7, sticky=(W,E))
@@ -146,6 +156,12 @@ class Window(Frame):
         self.updateeventoptions()
         
         self.sessionviewer()
+        
+        self.quickstart()
+        
+    def quickstart(self):
+        self.choosefile()
+        self.loaddata()
         
     def choosefile(self):
         # open window to choose file
@@ -308,6 +324,12 @@ class Window(Frame):
         #self.getnoiseindex()
 
         self.snips_to_plot = self.snips[self.snipsVar.get()]
+        if self.snipsVar.get() == 'filt_z':
+            self.ylabel='Z-Score'
+        else:
+            self.ylabel='Delta F'
+        
+        self.getcurrenttrial()
         
         # plot data
         self.singletrialviewer()
@@ -331,6 +353,17 @@ class Window(Frame):
             self.licks = getattr(self.lickepoc, self.onsetVar.get())
         except:
             alert('Cannot set licks')
+            
+    def getcurrenttrial(self):       
+        maxtrials = np.shape(self.snips_to_plot)[0]
+        try:
+            trial_entered = int(self.currenttrial.get())
+            if trial_entered < 1 or trial_entered > maxtrials:
+                self.trial_to_plot = 'all'
+            else:
+                self.trial_to_plot = trial_entered
+        except:
+            self.trial_to_plot = 'all'
   
     def togglenoise(self):
         if self.noise:
@@ -346,12 +379,19 @@ class Window(Frame):
         
     def prevtrial(self):
         print('Selecting prev trial')
+        self.currenttrial.set(str(int(self.currenttrial.get()) - 1))
+        self.makesnips()
         
     def nexttrial(self):
         print('Selecting next trial')
+        self.currenttrial.set(str(int(self.currenttrial.get()) + 1))
+        self.makesnips()
         
     def showall(self):
         print('Showing all trials')
+        self.trial_to_plot = 'all'
+        self.currenttrial.set('')
+        self.makesnips()
 
     def makelickruns(self):
         self.setlicks()
@@ -362,13 +402,22 @@ class Window(Frame):
 
     def singletrialviewer(self):
         f = Figure(figsize=(2.67,2.67)) # 5,3
-        ax = f.add_subplot(111)
+        f.subplotpars.left=0.2
+        ax = f.subplots()
         
-        if self.noise:
-            trialsFig(ax, self.snips_to_plot, pps=self.pps, noiseindex=self.noiseindex)
+        if self.trial_to_plot != 'all':
+            trialsFig(ax, self.snips_to_plot[self.trial_to_plot][:], pps=self.pps,
+                      eventText = self.eventsVar.get(),
+                      ylabel=self.ylabel)
         else:
-            snips = np.asarray([i for (i,v) in zip(self.snips_to_plot, self.noiseindex) if not v])
-            trialsFig(ax, snips)
+            if self.noise:
+                trialsFig(ax, self.snips_to_plot, pps=self.pps, noiseindex=self.noiseindex,
+                          eventText = self.eventsVar.get(),
+                          ylabel=self.ylabel)
+            else:
+                snips = np.asarray([i for (i,v) in zip(self.snips_to_plot, self.noiseindex) if not v])
+                trialsFig(ax, snips, pps=self.pps, eventText = self.eventsVar.get(),
+                          ylabel=self.ylabel)
      
         canvas = FigureCanvasTkAgg(f, self.f4)
         canvas.draw()
@@ -392,8 +441,9 @@ class Window(Frame):
     def averagesnipsviewer(self):
         
         f = Figure(figsize=(2.67,2.67)) # 5.3
-        ax = f.add_subplot(111)
-        
+        f.subplotpars.left=0.2
+        ax = f.subplots()
+ 
         if self.noise:
             snips=self.snips_to_plot
         else:
@@ -401,7 +451,8 @@ class Window(Frame):
 
         trialsShadedFig(ax, snips,
                           self.pps,
-                          eventText = self.eventsVar.get())
+                          eventText = self.eventsVar.get(),
+                          ylabel=self.ylabel)
         
         canvas = FigureCanvasTkAgg(f, self.f6)
         canvas.draw()
@@ -518,7 +569,7 @@ def mastersnipper(x, events,
                                    trialLength=trialLength,
                                    adjustBaseline = False)
         
-        filtTrials_z = zscore(filtTrials)
+        filtTrials_z = np.asarray(zscore(filtTrials))
         
         bgMAD = findnoise(x.data, x.randomevents,
                               t2sMap=x.t2sMap, fs=x.fs, bins=bins,
@@ -581,13 +632,13 @@ def trialsFig(ax, trials, pps=1, preTrial=10, scale=5, noiseindex = [],
         trials = np.array([i for (i,v) in zip(trials, noiseindex) if not v])
         if plotnoise == True:
             ax.plot(trialsNoise.transpose(), c='red', alpha=0.1)
-        
+
     ax.plot(trials.transpose(), c='grey', alpha=0.4)
     ax.plot(np.mean(trials,axis=0), c='k', linewidth=2)
      
-    ax.set(ylabel = ylabel)
+    ax.set_ylabel(ylabel)
     ax.xaxis.set_visible(False)
-            
+        
     scalebar = scale * pps
 
     yrange = ax.get_ylim()[1] - ax.get_ylim()[0]
@@ -625,9 +676,9 @@ def trialsShadedFig(ax, trials, pps=1, scale=5, preTrial=10,
 
     errorpatch = ax.fill_between(x, y-yerror, y+yerror, color=errorcolor, alpha=0.4)
     
-    ax.set(ylabel = ylabel)
+    ax.set_ylabel(ylabel)
     ax.xaxis.set_visible(False)
-            
+
     scalebar = scale * pps
 
     yrange = ax.get_ylim()[1] - ax.get_ylim()[0]

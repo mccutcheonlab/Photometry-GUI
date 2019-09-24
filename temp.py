@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Sep 22 07:41:30 2019
+Created on Tue Sep 24 09:57:39 2019
 
 @author: jmc010
 """
-tdtfile='C:\\Github\\PPP_analysis\\data\\Eelke-171027-111329\\'
-tmp = tdt.read_block(tdtfile, evtype=['epocs'])
+
+from matplotlib.figure import Figure
+
+
+f = Figure(figsize=(2.67,2.67)) # 5.3
+ax = f.subplots()
+#f.SubplotParams(left=0.5)
+
+f.subplotpars.left=0.3
