@@ -316,16 +316,21 @@ class Window(Frame):
         
     def setevents(self):
         try:
-            if self.eventsVar.get() == 'runs':
-                self.events = self.runs
+            if 'runs' in self.eventsVar.get():
+                key=self.eventsVar.get().split('-')
+                self.events = self.runs[key[1]]
             else:
                 self.eventepoc = getattr(self.epocs, self.eventsVar.get())
                 self.events = getattr(self.eventepoc, self.onsetVar.get())
-
+        except:
+            alert('Cannot set events')
+            
+    def setlicks(self):
+        try:
             self.lickepoc = getattr(self.epocs, self.lickrunsVar.get())
             self.licks = getattr(self.lickepoc, self.onsetVar.get())
         except:
-            alert('Cannot set event')
+            alert('Cannot set licks')
   
     def togglenoise(self):
         if self.noise:
@@ -349,10 +354,10 @@ class Window(Frame):
         print('Showing all trials')
 
     def makelickruns(self):
-        self.setevents()
-        # need to set lick runs as if a normal output variable
-        self.runs = [val for i, val in enumerate(self.licks) if (val - self.licks[i-1] > 10)]
-        self.epochfields.append('runs')
+        self.setlicks()
+        self.runs={}
+        self.runs[self.lickrunsVar.get()] = [val for i, val in enumerate(self.licks) if (val - self.licks[i-1] > 10)]
+        self.epochfields.append('runs-' + self.lickrunsVar.get())
         self.updateeventoptions()
 
     def singletrialviewer(self):
@@ -360,7 +365,7 @@ class Window(Frame):
         ax = f.add_subplot(111)
         
         if self.noise:
-            trialsFig(ax, self.snips_to_plot, noiseindex=self.noiseindex)
+            trialsFig(ax, self.snips_to_plot, pps=self.pps, noiseindex=self.noiseindex)
         else:
             snips = np.asarray([i for (i,v) in zip(self.snips_to_plot, self.noiseindex) if not v])
             trialsFig(ax, snips)
@@ -602,7 +607,7 @@ def trialsFig(ax, trials, pps=1, preTrial=10, scale=5, noiseindex = [],
     
     return ax
 
-def trialsShadedFig(ax, trials, pps = 1, scale = 5, preTrial = 10,
+def trialsShadedFig(ax, trials, pps=1, scale=5, preTrial=10,
                     noiseindex=[],
                     eventText = 'event', ylabel = '',
                     linecolor='k', errorcolor='grey'):
