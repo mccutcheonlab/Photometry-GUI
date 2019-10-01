@@ -223,6 +223,8 @@ class Window(Frame):
         self.chooselicksMenu.grid(column=0, row=4)
         
     def loaddata(self):   
+        self.progress['value'] = 0
+        
         self.progress['value'] = 40
         # load in streams
         self.loadstreams()
@@ -231,6 +233,10 @@ class Window(Frame):
         # process data
         self.processdata()
         self.progress['value'] = 80
+        
+        # set time vectors
+        self.time2samples()
+        self.progress['value'] = 90
         
         # plot all session data
         self.sessionviewer()
@@ -260,52 +266,102 @@ class Window(Frame):
         self.datafilt = sig.filtfilt(b, a, datafilt)
         
     def sessionviewer(self):
+        try:
+            self.makesessionfig(self.f2, self.data, self.datauv, 'F')
+        except AttributeError:
+            self.makesessionfig(self.f2, [], [], 'F')
+            
+        try:
+            self.makesessionfig(self.f3, self.datafilt, [], 'Delta F')
+        except AttributeError:
+            self.makesessionfig(self.f3, [], [], 'Delta F')
+        # parameters for polt bounding boxes
+#        bottom=0.23
+#        
+#        # plot blue and uv signals
+#        fig1 = Figure(figsize=(4,2))
+#        fig1.subplotpars.bottom=bottom
+#        fig1.subplotpars.left=0.18
+#        ax = fig1.subplots(nrows=2, sharex=True, gridspec_kw={'height_ratios':[1,5]})
+#        fig1.subplots_adjust(hspace=None)
+#        invisible_axes(ax[0])
+#        for sp in ['right', 'top']:
+#            ax[1].spines[sp].set_visible(False)
+#
+#        try:
+#            ax[1].plot(self.t2sMap, self.data, color='blue')
+#        except AttributeError: pass
+#        try:
+#            ax[1].plot(self.t2sMap, self.datauv, color='m')
+#        except AttributeError: pass
+#        ax[1].set_ylabel('F')
+#        try:
+#            ax[0].scatter(self.events, [1]*len(self.events))
+#            ax[0].text(-10, 1, self.eventsVar.get(), va='center', ha='right')
+#        except AttributeError: pass
+#
+#        # plot filtered signal
+#        fig2 = Figure(figsize=(4,2))
+#        fig2.subplotpars.bottom=bottom
+#        fig2.subplotpars.left=0.2
+#        ax = fig2.subplots()
+#    
+#        try:
+#            ax.plot(self.datafilt, color='g')
+#        except: pass
+#        ax.set_ylabel('Delta F')
+#        ax.yaxis.set_major_formatter(StrMethodFormatter('{x:.1}'))
+#        
+#        #label axes
+#        for fig in [fig1, fig2]:
+#            try:
+#                ax=fig.axes[0][0]
+#                maxtime=np.ceil(ax.get_xlim()[1] / self.fs / 60)
+#                ax.set_xticks(np.multiply(np.arange(0, maxtime, 10),60*self.fs))
+#                ax.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
+#                ax.set_xlabel('Time (min)')        
+#            except: pass
+#        
+#        #add figures to frames
+#        canvas = FigureCanvasTkAgg(fig1, self.f2)
+#        canvas.draw()
+#        canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
+#        
+#        canvas = FigureCanvasTkAgg(fig2, self.f3)
+#        canvas.draw()
+#        canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
+
+    def makesessionfig(self, frame, data1, data2, ylabel):
         # parameters for polt bounding boxes
         bottom=0.23
         
         # plot blue and uv signals
-        fig1 = Figure(figsize=(4,2))
-        fig1.subplotpars.bottom=bottom
-        fig1.subplotpars.left=0.18
-        ax = fig1.subplots()
-
+        fig = Figure(figsize=(4,2))
+        fig.subplotpars.bottom=bottom
+        fig.subplotpars.left=0.2
+        ax = fig.subplots(nrows=2, sharex=True, gridspec_kw={'height_ratios':[1,5]})
+        fig.subplots_adjust(hspace=None)
+        invisible_axes(ax[0])
+        for sp in ['right', 'top']:
+            ax[1].spines[sp].set_visible(False)
+        ax[1].set_ylabel(ylabel)
+            
         try:
-            ax.plot(self.data, color='blue')
-        except AttributeError: pass
-        try:
-            ax.plot(self.datauv, color='m')
-        except AttributeError: pass
-        ax.set_ylabel('F')
-        
-
-        # plot filtered signal
-        fig2 = Figure(figsize=(4,2))
-        fig2.subplotpars.bottom=bottom
-        fig2.subplotpars.left=0.2
-        ax = fig2.subplots()
-    
-        try:
-            ax.plot(self.datafilt, color='g')
+            ax[1].plot(self.t2sMap, data1, color='blue')
         except: pass
-        ax.set_ylabel('Delta F')
-        ax.yaxis.set_major_formatter(StrMethodFormatter('{x:.1}'))
+        try:
+            ax[1].plot(self.t2sMap, data2, color='m')
+        except: pass
         
-        #label axes
-        for fig in [fig1, fig2]:
-            try:
-                ax=fig.axes[0]
-                maxtime=np.ceil(ax.get_xlim()[1] / self.fs / 60)
-                ax.set_xticks(np.multiply(np.arange(0, maxtime, 10),60*self.fs))
-                ax.set_xticklabels(['0', '10', '20', '30', '40', '50', '60'])
-                ax.set_xlabel('Time (min)')        
-            except: pass
-        
-        #add figures to frames
-        canvas = FigureCanvasTkAgg(fig1, self.f2)
-        canvas.draw()
-        canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
-        
-        canvas = FigureCanvasTkAgg(fig2, self.f3)
+        try:
+            ax[0].scatter(self.events, [1]*len(self.events), marker='|')
+            ax[0].text(-10, 1, self.eventsVar.get(), va='center', ha='right')
+        except AttributeError: pass
+
+        ax[1].yaxis.set_major_formatter(StrMethodFormatter('{x:.1}'))
+        ax[1].set_xlabel('Time (s)')
+
+        canvas = FigureCanvasTkAgg(fig, frame)
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
 
@@ -315,7 +371,7 @@ class Window(Frame):
         self.bins = int(self.nbins.get())
         
         # extract snips and calculate noise from data
-        self.time2samples()
+        
         self.randomevents = makerandomevents(120, max(self.t2sMap)-120)
         self.bgTrials, self.pps = snipper(self.data, self.randomevents,
                                         t2sMap = self.t2sMap, fs = self.fs, bins=self.bins)
@@ -339,6 +395,7 @@ class Window(Frame):
         self.singletrialviewer()
         self.heatmapviewer()
         self.averagesnipsviewer()
+        self.sessionviewer()
         
     def setevents(self):
         try:
@@ -731,6 +788,12 @@ def makeheatmap(ax, data, trial_to_plot, events=None, ylabel='Trial'):
     ax.invert_yaxis()
     
     return ax, mesh
+
+def invisible_axes(ax):
+    ax.xaxis.set_visible(False)
+    ax.yaxis.set_visible(False)
+    for sp in ['left', 'right', 'top', 'bottom']:
+        ax.spines[sp].set_visible(False)
 
 root = Tk()
 
