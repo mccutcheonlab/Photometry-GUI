@@ -1,22 +1,20 @@
-# -*- mode: python -*-
-
-import sys
-sys.setrecursionlimit(5000)
+# -*- mode: python ; coding: utf-8 -*-
 
 block_cipher = None
 
 
 a = Analysis(['photometryGUI.py'],
-             pathex=['C:\\Users\\James Rig\\Documents\\GitHub\\Photometry-GUI'],
+             pathex=['C:\\Github\\Photometry-GUI'],
              binaries=[],
              datas=[],
-             hiddenimports=['scipy._lib.messagestream'],
+             hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
-             cipher=block_cipher)
+             cipher=block_cipher,
+             noarchive=False)
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
@@ -24,9 +22,12 @@ exe = EXE(pyz,
           a.binaries,
           a.zipfiles,
           a.datas,
+          [],
           name='photometryGUI',
           debug=False,
+          bootloader_ignore_signals=False,
           strip=False,
           upx=True,
+          upx_exclude=[],
           runtime_tmpdir=None,
           console=True )
