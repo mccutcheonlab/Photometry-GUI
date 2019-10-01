@@ -5,3 +5,6 @@ dist/*
 build/*
 *.pyc
 *.pyo
+
+data/*
+output/*
