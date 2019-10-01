@@ -107,7 +107,7 @@ class Window(Frame):
         # Progress bar and about label
         self.progress = ttk.Progressbar(self, orient=HORIZONTAL, length=200, mode='determinate')
 
-        self.aboutLbl = ttk.Label(self, text='Photometry Analyzer-2.0 by J McCutcheon')
+        self.aboutLbl = ttk.Label(self, text='Photometry Analyzer-2.1 by J McCutcheon')
 
         
         # Packing grid with widgets
@@ -176,9 +176,6 @@ class Window(Frame):
         # opens file to get stream and epoch names
         self.getstreamandepochnames()
         
-        # set tick
-        self.setticks()
-        
         # update dropdown menu options
         self.updatesigoptions()
         self.updateeventoptions()
@@ -190,13 +187,6 @@ class Window(Frame):
         tmp = tdt.read_block(self.tdtfile, evtype=['epocs'])
         self.epocs = getattr(tmp, 'epocs')
         self.epochfields = [v for v in vars(self.epocs)]
-        
-    def setticks(self):
-        try:
-            self.tick = self.epocs.Tick['onset']
-            print('Ticks set.')
-            return
-        except: print('Could not assign tick automatically')
         
     def updatesigoptions(self):
         try:
@@ -326,7 +316,7 @@ class Window(Frame):
         
         # extract snips and calculate noise from data
         self.time2samples()
-        self.randomevents = makerandomevents(120, max(self.tick)-120)
+        self.randomevents = makerandomevents(120, max(self.t2sMap)-120)
         self.bgTrials, self.pps = snipper(self.data, self.randomevents,
                                         t2sMap = self.t2sMap, fs = self.fs, bins=self.bins)
         self.snips = mastersnipper(self, self.events,
@@ -335,7 +325,6 @@ class Window(Frame):
                                    trialLength=int(self.length.get()),
                                    threshold=int(self.noiseth.get()))
         self.noiseindex = self.snips['noise']
-        #self.getnoiseindex()
 
         self.snips_to_plot = self.snips[self.snipsVar.get()]
         if self.snipsVar.get() == 'filt_z':
@@ -482,14 +471,8 @@ class Window(Frame):
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, sticky=(N,S,E,W))
 
-    def time2samples(self):
-        maxsamples = len(self.tick)*int(self.fs)
-        if (len(self.data) - maxsamples) > 2*int(self.fs):
-            print('Something may be wrong with conversion from time to samples')
-            print(str(len(self.data) - maxsamples) + ' samples left over. This is more than double fs.')
-            self.t2sMap = np.linspace(min(self.tick), max(self.tick), maxsamples)
-        else:
-            self.t2sMap = np.linspace(min(self.tick), max(self.tick), maxsamples)
+    def time2samples(self):       
+        self.t2sMap = np.linspace(1, len(self.data), len(self.data)) / self.fs
             
     def event2sample(self, EOI):
         idx = (np.abs(self.t2sMap - EOI)).argmin()   
