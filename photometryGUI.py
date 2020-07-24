@@ -24,9 +24,18 @@ import matplotlib.pyplot as plt
 import ntpath#
 import csv
 import collections
+<<<<<<< Updated upstream
 
 import JM_general_functions as jmf
 import JM_custom_figs as jmfig
+=======
+import tdt
+import scipy.signal as sig
+import xlsxwriter as xl
+
+
+import photogui_fx
+>>>>>>> Stashed changes
 
 # Main class for GUI
 class Window(Frame):
@@ -59,9 +68,21 @@ class Window(Frame):
         self.converttdtBtn = ttk.Button(self, text='Convert TDT File', command=self.converttdt)
         self.loadfileBtn = ttk.Button(self, text='Load File', command=self.loadfile)
         self.makesnipsBtn = ttk.Button(self, text='Make Snips', command=self.makesnips)
+<<<<<<< Updated upstream
         self.makelickrunsBtn = ttk.Button(self, text='Lick runs', command=self.makelickruns)
         self.viewsessionBtn = ttk.Button(self, text='View Session', command=self.sessionviewer)
         
+=======
+        self.noiseBtn = ttk.Button(self, text='Turn noise off', command=self.togglenoise)
+        self.prevtrialBtn = ttk.Button(self, text='Prev Trial', command=self.prevtrial)
+        self.nexttrialBtn = ttk.Button(self, text='Next Trial', command=self.nexttrial)
+        self.showallBtn = ttk.Button(self, text='Show All', command=self.showall)
+        self.refreshBtn = ttk.Button(self, text='Refresh', command=self.makesnips)
+        self.defaultfolderBtn = ttk.Button(self, text='Default folder', command=self.chooseexportfolder)
+        self.makeexcelBtn = ttk.Button(self, text='Make Excel', command=self.makeExcel)
+
+        # Label definitions
+>>>>>>> Stashed changes
         self.shortfilename = StringVar(self.master)
         self.shortfilename.set('No file loaded')
         self.filenameLbl = ttk.Label(self, textvariable=self.shortfilename)
@@ -71,6 +92,12 @@ class Window(Frame):
         self.nbinsLbl = ttk.Label(self, text='No. of bins')
 #        self.chooseeventLbl = ttk.Label(self, text='Choose event')
         
+<<<<<<< Updated upstream
+=======
+        self.suffixLbl = ttk.Label(self, text='File suffix')
+        
+        # Field and entries
+>>>>>>> Stashed changes
         self.baseline = StringVar(self.master)
         self.baselineField = ttk.Entry(self, textvariable=self.baseline)
         self.baselineField.insert(END, '10')
@@ -82,8 +109,27 @@ class Window(Frame):
         self.nbins = StringVar(self.master)
         self.nbinsField = ttk.Entry(self, textvariable=self.nbins)
         self.nbinsField.insert(END, '300')
+<<<<<<< Updated upstream
 
         # self.snipsprogress = ttk.Progressbar(self, orient=VERTICAL, length=200, mode='determinate')
+=======
+        
+        self.noiseth = StringVar(self.master)
+        self.noisethField = ttk.Entry(self, textvariable=self.noiseth)
+        self.noisethField.insert(END, '10')
+        
+        self.currenttrial = StringVar(self.master)
+        self.currenttrialField = ttk.Entry(self, textvariable=self.currenttrial)
+        self.currenttrialField.insert(END, '')
+        
+        self.suffix = StringVar(self.master)
+        self.suffixField = ttk.Entry(self, textvariable=self.suffix)
+
+        # Progress bar and about label
+        self.progress = ttk.Progressbar(self, orient=HORIZONTAL, length=200, mode='determinate')
+
+        self.aboutLbl = ttk.Label(self, text='Photometry Analyzer-2.3 by J McCutcheon')
+>>>>>>> Stashed changes
 
         self.aboutLbl = ttk.Label(self, text='Photometry Analyzer-1.0 by J McCutcheon')
 # Packing grid with widgets
@@ -105,10 +151,25 @@ class Window(Frame):
         self.nbinsLbl.grid(column=4, row=3, sticky=E)
         self.nbinsField.grid(column=5, row=3)
         
+<<<<<<< Updated upstream
         self.makesnipsBtn.grid(column=9, row=3, sticky=(W,E))
         self.makelickrunsBtn.grid(column=8, row=4, columnspan=2)
 
         self.aboutLbl.grid(column=0, row=5, columnspan=3, sticky=W)
+=======
+        self.refreshBtn.grid(column=7, row=9, sticky=(W, E))
+        
+        self.makesnipsBtn.grid(column=9, row=4, rowspan=2, sticky=(N, S, W,E))
+        self.noiseBtn.grid(column=9, row=6, rowspan=2, sticky=(N, S, W,E))
+        
+        self.aboutLbl.grid(column=0, row=11, columnspan=3, sticky=W)
+        self.progress.grid(column=0, row=12, columnspan=2, sticky=(W, E))
+        
+        self.suffixLbl.grid(column=2, row=12, sticky=E)
+        self.suffixField.grid(column=3, row=12, sticky=(W, E))
+        self.defaultfolderBtn.grid(column=4, row=12, sticky=(W, E))
+        self.makeexcelBtn.grid(column=5, row=12, sticky=(W, E))
+>>>>>>> Stashed changes
      
         self.blue = StringVar(self.master)       
         self.uv = StringVar(self.master)  
@@ -238,8 +299,20 @@ class Window(Frame):
             alert('Cannot set event')
         
     def sessionviewer(self):
+<<<<<<< Updated upstream
         self.updateeventoptions()
         self.setsignals()
+=======
+        try:
+            self.makesessionfig(self.f2, self.data, self.datauv, 'F')
+        except AttributeError:
+            self.makesessionfig(self.f2, [], [], 'F')
+            
+        try:
+            self.makesessionfig(self.f3, self.datafilt, [], 'Delta F')
+        except AttributeError:
+            self.makesessionfig(self.f3, [], [], 'Delta F')
+>>>>>>> Stashed changes
 
         f = Figure(figsize=(7,2))
         ax = f.add_subplot(111)
@@ -308,6 +381,77 @@ class Window(Frame):
     def event2sample(self, EOI):
         idx = (np.abs(self.t2sMap - EOI)).argmin()   
         return idx
+    
+    def chooseexportfolder(self):
+        self.savefolder = get_location()
+        
+        print(self.shortfilename.get())
+        
+    def makeExcel(self):
+        if not hasattr(self, 'savefolder'):
+            self.chooseexportfolder()
+            
+        savefile = self.savefolder + '//' + 'output_' + self.suffix.get() + '.xlsx'
+        
+        print(savefile)
+        
+#        try:
+        self.makesummarysheet()
+        
+        wb = xl.Workbook(savefile)
+        # worksheet with summary data
+        sh = wb.add_worksheet('Summary')
+        
+        bold = wb.add_format({'bold': True})
+        
+        sh.set_column(0, 1, 20)
+        sh.write('A1', 'Parameter', bold)
+        sh.write('B1', 'Value', bold)
+        for idx, vals in enumerate(self.d):
+            sh.write(idx+1, 0, vals[0])
+            sh.write(idx+1, 1, vals[1])
+        
+        # # worksheet with average trace
+        sh = wb.add_worksheet('Average')
+        self.makeaveragesnips()
+        
+        for idx, val in enumerate(self.averagesnips):
+            sh.write(idx, 0, val)
+        
+        # sh = wb.add_worksheet('ILIs')
+        # for idx, val in enumerate(self.lickdata['ilis']):
+        #     sh.write(idx, 0, val)
+
+        # sh = wb.add_worksheet('Bursts')
+        # for idx, val in enumerate(self.lickdata['bLicks']):
+        #     sh.write(idx, 0, val)
+            
+        wb.close()
+#        except:
+#            alert('Working on making an Excel file')
+
+    def makesummarysheet(self):
+        
+        self.d = [('Filename',self.tdtfile),
+                  ('Signal (470nm)',self.blue.get()),
+                  ('Signal (405nm)',self.uv.get()),
+                  ('Event',self.eventsVar.get()),
+                  ('Onset or offset',self.onsetVar.get()),
+                  ('Data type',self.snipsVar.get()),
+                  ('Noise threshold',self.noisethVar.get()),
+                  ('Noise on',self.noise)]
+
+    def makeaveragesnips(self):
+        if self.noise:
+            snips=self.snips_to_plot
+        else:
+            snips=np.asarray([i for (i,v) in zip(self.snips_to_plot, self.noiseindex) if not v])
+            
+        self.averagesnips = np.mean(snips, axis=0)
+
+def get_location():
+    loc = filedialog.askdirectory(initialdir=currdir, title='Select a save folder.')
+    return loc
        
 def alert(msg):
     print(msg)
